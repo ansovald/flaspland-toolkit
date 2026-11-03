@@ -26,7 +26,7 @@ def generate_html(env_name, landscape, milliseconds_per_step=500):
     
     train_defs = ""
     path_defs = ""
-    for train_id in landscape.trains.keys():
+    for train_id in landscape.env_data.trains.keys():
         train_defs += f"const train_{train_id}_rotation = document.getElementById('train_{train_id}_rotation_group');\n"
         train_defs += f"const train_{train_id}_animate = document.getElementById('train_{train_id}_animate');\n"
         train_defs += f"const train_{train_id}_opacity_animation = document.getElementById('train_{train_id}_opacity_animation');\n"
@@ -46,7 +46,7 @@ def generate_html(env_name, landscape, milliseconds_per_step=500):
     html_output = html_output.replace("{{MILLISECONDS_PER_STEP}}", str(milliseconds_per_step))
 
     path_step_code = ""
-    for train_id in landscape.trains.keys():
+    for train_id in landscape.env_data.trains.keys():
         path_step_code += f"  const state_{train_id} = path_{train_id}[step];\n"
         path_step_code += f"  train_{train_id}_animate.setAttribute('dur', `${{ms_per_step}}ms`);\n"
         path_step_code += f"  train_{train_id}_animate.setAttribute('keyPoints', `${{state_{train_id}.keyPoints}}`);\n"
@@ -78,7 +78,7 @@ def generate_html(env_name, landscape, milliseconds_per_step=500):
     html_output = html_output.replace("{{PATH_STEP}}", path_step_code)
 
     stop_animation_code = ""
-    for train_id in landscape.trains.keys():
+    for train_id in landscape.env_data.trains.keys():
         stop_animation_code += f"  train_{train_id}_animate.endElement();\n"
     html_output = html_output.replace("{{STOP_ANIMATION}}", stop_animation_code)
 
@@ -91,8 +91,8 @@ def build_train_widgets(landscape: LandscapeBuilder) -> str:
     widgets = ""
     with open(train_widget_file, "r") as f:
         widget_template = f.read()
-    for train_id in landscape.trains.keys():
+    for train_id in landscape.env_data.trains.keys():
         widget_html = widget_template.replace("{{TRAIN_ID}}", str(train_id))
-        widget_html = widget_html.replace("{{SPEED}}", str(landscape.trains[train_id]['speed']))
+        widget_html = widget_html.replace("{{SPEED}}", str(landscape.env_data.trains[train_id]['speed']))
         widgets += widget_html + "\n"
     return widgets

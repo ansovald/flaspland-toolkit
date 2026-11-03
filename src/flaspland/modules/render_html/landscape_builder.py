@@ -3,46 +3,31 @@ import xml.etree.ElementTree as ET
 from pydreamplet import SVG, G, Vector, Rect, Text, Path, Circle, SvgElement
 from pydreamplet.markers import Marker, ARROW_SIMPLE
 import os
-import random
-import json
-from dataclasses import dataclass
 from .svg_files.control_buttons import build_buttons
-from .svg_files.get_svg import clean_svg_group, sample_scenery_id, get_train_svg, get_train_color, SCENERY_FILES, track_files
+from .svg_files.get_svg import clean_svg_group, sample_scenery_id, get_train_svg, get_train_color
 from .train_paths import TrainPath
+from .env_data import EnvData
+from pathlib import Path as PathlibPath
 
 import logging
 logger = logging.getLogger(__name__)
 
-STANDARD_STYLE = "standard_style_dynamic.css"
-TRAIN_HOVER_TEMPLATE = "train_hover_template.css"
-
-def load_grid(grid_file):
-    with open(grid_file, "r") as f:
-        grid = json.load(f)
-        # make keys int
-        grid = {int(y): {int(x): str(track_id) for x, track_id in row.items()} for y, row in grid.items()}
-    return grid
-
-def load_trains(train_file):
-    with open(train_file, "r") as f:
-        trains = json.load(f)
-    return trains
+SVG_STYLES = PathlibPath(__file__).parent / "svg_files" / "svg_styles.css"
+DYNAMIC_STYLE = PathlibPath(__file__).parent / "standard_style_dynamic.css"
+TRAIN_HOVER_TEMPLATE = PathlibPath(__file__).parent / "train_hover_template.css"
 
 class LandscapeBuilder:
-    def __init__(self, base_dir, grid, time_frame=None, train_info=None, cell_size=25, style_file=STANDARD_STYLE):
+    def __init__(self, base_dir, env_data: EnvData, time_frame: int=None, cell_size=25, style_files=[SVG_STYLES, DYNAMIC_STYLE], hover_template=TRAIN_HOVER_TEMPLATE):
         self.base_dir = base_dir
-        self.grid = grid
-        if train_info:
-            self.trains = train_info
-        else:
-            self.trains = load_trains(os.path.join(base_dir, "train_info.json"))
+        self.env_data = env_data
         self.time_frame = time_frame
         self.cell_size = cell_size        
         self.prepare_dynamic_styles(
-            style_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), style_file),
-            train_hover_style_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), TRAIN_HOVER_TEMPLATE)
+            styles=style_files,
+            train_hover_style_path=TRAIN_HOVER_TEMPLATE
             )
-        self.compute_dimensions(self.grid)
+        self.compute_dimensions()
+        self.use_groups = []
         self.canvas = self.build_landscape()
         self.control_canvas = self.build_controls()
         self.train_path_group = G(id="train_paths", class_name="train_paths")
@@ -52,16 +37,18 @@ class LandscapeBuilder:
         self.place_trains()
         self.save_svg()
 
-    def prepare_dynamic_styles(self, style_path, train_hover_style_path):
+    def prepare_dynamic_styles(self, styles, train_hover_style_path):
         # pre-computes all elements that depend on cell size
         self.font_size = self.cell_size / 2
         self.font_size_hover = f"{1.2 * self.font_size}px"
         self.train_path_width = self.cell_size / 30
         self.train_path_width_hover = f"{4 * self.train_path_width}px"
 
-        # open style_path and replace font-size placeholders
-        with open(style_path, "r") as f:
-            style_content = f.read()
+        style_content = ""
+        for style_path in styles:
+            with open(style_path, "r") as f:
+                style_content += f.read()
+
         style_content = style_content.replace("{{HOVER_FONT_SIZE}}", f"{self.font_size_hover}")
 
         # generate train fill colors
@@ -69,7 +56,7 @@ class LandscapeBuilder:
         train_info_style = ""
         train_fill_template = ".train-fill-TRAIN_ID{fill: TRAIN_COLOR;}"
         train_info_template = ".train_TRAIN_ID_background { background-color: TRAIN_COLOR; }"
-        for train_id in self.trains.keys():
+        for train_id in self.env_data.trains.keys():
             train_color = get_train_color(train_id)
             train_fill_colors += train_fill_template.replace("TRAIN_ID", str(train_id)).replace("TRAIN_COLOR", train_color) + "\n"
             train_info_style += train_info_template.replace("TRAIN_ID", str(train_id)).replace("TRAIN_COLOR", train_color) + "\n"
@@ -82,7 +69,7 @@ class LandscapeBuilder:
         with open(train_hover_style_path, "r") as f:
             train_hover_template = f.read()
         train_hover_style = ""
-        for train_id in self.trains.keys():
+        for train_id in self.env_data.trains.keys():
             train_hover_style += train_hover_template.replace("TRAIN_ID", str(train_id)).replace("HOVER_WIDTH", f"{self.train_path_width_hover}") + "\n"
         self.standard_style = self.standard_style.replace("{{TRAIN_HOVER_STYLE}}", train_hover_style)
 
@@ -107,20 +94,20 @@ class LandscapeBuilder:
     def control_svg_string(self):
         return self.control_canvas.to_string()
 
-    def compute_dimensions(self, grid):
-        max_x = 0
-        max_y = 0
-        for y in grid:
-            if y + 1 > max_y:
-                max_y = y + 1
-            for x in grid[y]:
-                if x + 1 > max_x:
-                    max_x = x + 1
-        self.grid_width = max_x
-        self.grid_height = max_y
+    def compute_dimensions(self):
+        # max_x = 0
+        # max_y = 0
+        # for y in grid:
+        #     if y + 1 > max_y:
+        #         max_y = y + 1
+        #     for x in grid[y]:
+        #         if x + 1 > max_x:
+        #             max_x = x + 1
+        # self.grid_width = max_x
+        # self.grid_height = max_y
 
-        self.height = self.grid_height + 2
-        self.width = self.grid_width + 2
+        self.height = self.env_data.height + 2
+        self.width = self.env_data.width + 2
 
     def get_abs_coord(self, coord, grid_offset=True):
         offset = 1 if grid_offset else 0
@@ -146,40 +133,37 @@ class LandscapeBuilder:
         label.text_anchor = "middle"
         label.dominant_baseline = "central"
         return label
-    
-    def prepare_use_groups(self):
-        # prepare use groups to be cloned when building the landscape for better performance
-        # to be called from within build_landscape before building the landscape
-        for scenery_file in SCENERY_FILES:
-            group_id = os.path.basename(scenery_file).replace(".svg", "")
-            cell_group = clean_svg_group(scenery_file, group_id, self.cell_size, scale=240)
-            cell_group.pos = Vector(0,0)
-            self.defs.append(cell_group)
-        for track_file in track_files:
-            group_id = os.path.basename(track_file).replace(".svg", "")
-            group = clean_svg_group(track_file, group_id, self.cell_size, scale=240)
-            self.defs.append(group)
+
+    def get_use_id(self, file_path, scale=240):
+        file_name = file_path.stem
+        if file_name in self.use_groups:
+            return file_name
+        cell_group = clean_svg_group(file_path, file_name, self.cell_size, scale=scale)
+        cell_group.pos = Vector(0,0)
+        self.defs.append(cell_group)
+        self.use_groups.append(file_name)
+        return file_name
 
     def build_landscape(self):
         self.full_svg = SVG(self.width * self.cell_size, self.height * self.cell_size, id="svg_canvas")
         self.canvas = G(class_name="svg-pan-zoom-viewport")
         self.defs = SvgElement("defs")
         self.full_svg.append(self.canvas)
-        self.prepare_use_groups()
+        # self.prepare_use_groups()
         self.canvas.append(self.defs)
         # set background color
-        self.canvas.append(Rect(pos=self.get_abs_vector(0,0), width=self.grid_width * self.cell_size, height=self.grid_height * self.cell_size, class_name="background"))
+        self.canvas.append(Rect(pos=self.get_abs_vector(0,0), width=self.env_data.width * self.cell_size, height=self.env_data.height * self.cell_size, class_name="background"))
 
         landscape = G(id="landscape", class_name="landscape")
         self.canvas.append(landscape)
 
         # label rows and columns
-        for y in range(self.grid_height):
+        for y in range(self.env_data.height):
             label_group = G(id=f"row_label_{y}", class_name="row_label")
             # add a rect covering the whole row as first child for easier selection
             label_background = Rect(
                 pos=self.get_abs_vector(-1, y, grid_offset=True),
-                width=(self.grid_width + 2) * self.cell_size,
+                width=(self.env_data.width + 2) * self.cell_size,
                 height=self.cell_size,
                 fill="#000000",
                 fill_opacity=0.0,
@@ -188,16 +172,16 @@ class LandscapeBuilder:
             label_group.append(label_background)
             label_left = self.cell_label(-1, y, str(y))
             label_group.append(label_left)
-            label_right = self.cell_label(self.grid_width, y, str(y))
+            label_right = self.cell_label(self.env_data.width, y, str(y))
             label_group.append(label_right)
             landscape.append(label_group)
-        for x in range(self.grid_width):
+        for x in range(self.env_data.width):
             label_group = G(id=f"col_label_{x}", class_name="col_label")
             # add a rect covering the whole column as first child for easier selection
             label_background = Rect(
                 pos=self.get_abs_vector(x, -1, grid_offset=True),
                 width=self.cell_size,
-                height=(self.grid_height + 2) * self.cell_size,
+                height=(self.env_data.height + 2) * self.cell_size,
                 fill="#000000",
                 fill_opacity=0.0,
                 id=f"col_label_{x}_background"
@@ -205,26 +189,35 @@ class LandscapeBuilder:
             label_group.append(label_background)
             top_label = self.cell_label(x, -1, str(x))
             label_group.append(top_label)
-            bottom_label = self.cell_label(x, self.grid_height, str(x))
+            bottom_label = self.cell_label(x, self.env_data.height, str(x))
             label_group.append(bottom_label)
             landscape.append(label_group)
 
-        for y in self.grid:
-            for x in self.grid[y]:
-                track_id = self.grid.get(y, {}).get(x, None)
-                if track_id is None:
-                    continue
-                elif track_id == "0":
-                    svg_id = sample_scenery_id()
+        for y in self.env_data.grid:
+            for x in self.env_data.grid[y]:
+                tile = self.env_data.grid[x][y]
+                station_id = None
+                if tile.file:
+                    use_id = self.get_use_id(tile.file)
+                    if tile.station:
+                        station_id = self.get_use_id(tile.station)
                 else:
-                    svg_id = track_id #f"{track_id}.svg"
-                group_id = f"cell_{x}_{y}_t{track_id}"
+                    use_id = "0"
+
+
+                group_id = f"cell_{x}_{y}_t{use_id}"
                 cell_group = G(id=group_id, class_name="cell")
                 cell_image = SvgElement("use")
-                cell_image.href = f"#{svg_id}"
+                cell_image.href = f"#{use_id}"
                 cell_pos = self.get_abs_vector(x, y, grid_offset=True)
                 cell_image.transform = f"translate({cell_pos.x}, {cell_pos.y})"
                 cell_group.append(cell_image)
+
+                if station_id:
+                    station_image = SvgElement("use")
+                    station_image.href = f"#{station_id}"
+                    station_image.transform = f"translate({cell_pos.x}, {cell_pos.y})"
+                    cell_group.append(station_image)
                 # add invisible rect to capture hover events with stroke to show grid
                 hover_rect = Rect(
                     pos=cell_pos,
@@ -251,7 +244,7 @@ class LandscapeBuilder:
         Added to self.train_path_group so that it appears behind trains.
         """
         train_paths = {}
-        for train_id in self.trains.keys():
+        for train_id in self.env_data.trains.keys():
             path_element = Path(
                 d="",
                 stroke=get_train_color(train_id),
@@ -271,12 +264,12 @@ class LandscapeBuilder:
         """
         Calls TrainPath to build paths for each train and prepares their respective SVG elements.
         """
-        for train_id in self.trains:
+        for train_id in self.env_data.trains:
             logger.debug(f"Placing train {train_id}")
             train_color = get_train_color(train_id)
             # container to hold all elements of the train for easy highlighting
             train_group = G(id=f"train_{train_id}_main", class_name="train")
-            train_info = self.trains[train_id]
+            train_info = self.env_data.trains[train_id]
             # build train path
             logger.info(f"Initializing TrainPath for train {train_id} with time frame {self.time_frame}")
             train_path_builder = TrainPath(train_id, train_info, self.time_frame, self.cell_size)

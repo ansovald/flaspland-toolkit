@@ -18,13 +18,31 @@ for file in SCENERY_PATH.iterdir():
 
 SCENERY_IDS = [file.stem for file in SCENERY_FILES]
 
-track_files = []
+BUILDINGS_PATH = SVG_DIR / "buildings"
+BUILDINGS_FILES = []
+for file in BUILDINGS_PATH.iterdir():
+    if file.suffix == ".svg":
+        BUILDINGS_FILES.append(file)
+
+BUILDINGS_IDS = [file.stem for file in BUILDINGS_FILES]
+
+STATION_PATH = SVG_DIR / "station"
+STATION_FILES = []
+for file in STATION_PATH.iterdir():
+    if file.suffix == ".svg":
+        STATION_FILES.append(file)
+
+STATION_IDS = [file.stem for file in STATION_FILES]
+
+TRACK_FILES = []
+track_dir = SVG_DIR / "tracks"
 # track files consist only of numbers
-for file in SVG_DIR.iterdir():
+for file in track_dir.iterdir():
     if file.name.endswith(".svg") and file.name.split(".")[0].isdigit():
-        track_files.append(file)
+        TRACK_FILES.append(file)
 
 def make_signal_group(train_id):
+    # Signal group for the train, directly constructed from SVG elements
     signal_group = G(id=f"train_{train_id}_signal_group", class_name="train_signal")
     background = Path(d="m 228,76.8 c 0,9.941 -8.059,18 -18,18 -9.941,-0 -18,-8.059 -18,-18 V 30 c 0,-9.941 8.059,-18 18,-18 9.941,0 18,8.059 18,18z", style="stroke: #000000; stroke-width: 14.4;")
     signal_group.append(background)
@@ -35,7 +53,8 @@ def make_signal_group(train_id):
     return signal_group
 
 def get_train_svg(train_id, cell_size=25, scale=240):
-    svg_file = SVG_DIR / "trains_wide" / "train-generic.xml"
+    # Generic train svg file used as a template for all trains, with placeholders for train id and color
+    svg_file = SVG_DIR / "train-generic.xml"
     svg_string = svg_file.read_text()
     # replace color placeholder with actual color
     svg_string = svg_string.replace("{TRAIN_ID}", str(train_id))
@@ -45,8 +64,6 @@ def get_train_svg(train_id, cell_size=25, scale=240):
     return train_group
 
 def clean_svg_group(svg_file, group_id, cell_size=25, scale=240, class_name=None):
-    # if not os.path.exists(svg_file):
-    #     raise FileNotFoundError(f"SVG file {svg_file} not found.")
     if isinstance(svg_file, FilePath):
         elem = ET.parse(svg_file).getroot()
     elif not svg_file.endswith(".svg"):

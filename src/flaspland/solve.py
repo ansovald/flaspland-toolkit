@@ -190,6 +190,30 @@ def main(argv=None) -> int:
     with open(args.env, "rb") as f:
         try:
             env = pickle.load(f)
+            # logger.info(f"Environment {args.env} loaded successfully.")
+            # logger.info("stations_links:")
+            # stations_links = env.stations_links
+            # logger.info(f"  {stations_links}")
+            # stations = env.stations_links.stations
+            # logger.info("  Stations:")
+            # for station in stations:
+            #     logger.info(f"    {station}: {stations[station]}")
+            #     stopping_points = stations[station].stopping_points
+            #     for sp in stopping_points:
+            #         logger.info(f"      {sp}")
+            # grid = env.rail.grid
+            # logger.info("  Grid:")
+            # for row in grid:
+            #     logger.info(f"    {row}")
+            # # logger.info("Attributes of environment:")
+            # for attr in dir(env):
+            #     logger.info(f"  {attr}")
+            #     try:
+            #         value = getattr(env, attr)
+            #         logger.info(f"    Value: {value}")
+            #     except Exception as e:
+            #         logger.info(f"    Could not retrieve value: {e}")
+            # exit(0)
         except (ModuleNotFoundError, AttributeError) as e:
             raise SystemExit(f"Could not load '{args.env}' ({e}). It was probably created with a different version of flatland; regenerate it with 'flaspland build'.")
     

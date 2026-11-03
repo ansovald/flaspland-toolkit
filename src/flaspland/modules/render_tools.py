@@ -1,21 +1,18 @@
 # rendering visualizations
 # from flatland.envs.rail_env import RailEnvActions
 from flatland.utils.rendertools import RenderTool
-from flatland.envs.rail_env import RailEnv
 import imageio.v2 as imageio
 from PIL import Image, ImageDraw, ImageFont
 from pathlib import Path
 import tempfile
 
-from .render_html import train_info, grid_dict, LandscapeBuilder, generate_html
+from .render_html import LandscapeBuilder, generate_html, EnvData
 from .defs import DIR_MAP, ACTION_MAP
 
 import json
 
 import logging
 logger = logging.getLogger(__name__)
-
-DIR_MAP = {0:'n', 1:'e', 2:'s', 3:'w'}
 
 class Renderer():
     def __init__(self, env, env_name):
@@ -32,7 +29,7 @@ class Renderer():
 class GifRenderer(Renderer):
     def __init__(self, env, env_name, gl="PILSVG", font=None):
         logger.info("Initializing GifRenderer")
-        super().__init__(env)
+        super().__init__(env, env_name)
         self.env_renderer = RenderTool(env, gl=gl)
         self.env_renderer.reset()
         self.images = []
@@ -42,8 +39,8 @@ class GifRenderer(Renderer):
         if self.font is None:
             self.font = Path(__file__).resolve().parent / "LiberationMono-Regular.ttf"
 
-    def __del__(self):
-        self.frames.cleanup()
+    # def __del__(self):
+    #     self.frames.cleanup()
 
     def render_frame(self, timestep, *args, **kwargs):
         filename = Path(self.frames.name) / f'flatland_frame_{timestep:04d}.png'
@@ -98,16 +95,16 @@ class HtmlRenderer(Renderer):
     def __init__(self, env, env_name, cell_size=25, milliseconds_per_step=500):
         logger.info("Initializing HtmlRenderer")
         super().__init__(env, env_name)
-        self.train_info = train_info(env)
+        # self.train_info = train_info(env)
         self.time_frame = 0
         self.cell_size = cell_size
         self.milliseconds_per_step = milliseconds_per_step
-        self.grid = grid_dict(env)
+        self.env_data = EnvData(env)
 
     def render_frame(self, timestep, actions):
         for a in actions[timestep]:
             (x, y), direction = get_position_and_direction(self.env.agents[a])
-            self.train_info[a]["path"][timestep] = {
+            self.env_data.trains[a]["path"][timestep] = {
                 "position": {"x": x, "y": y},
                 "direction": direction,
                 "status": self.env.agents[a].state.name,
@@ -117,11 +114,13 @@ class HtmlRenderer(Renderer):
 
     def save(self, output_dir, *args, **kwargs):
         output_file = Path(output_dir) / "train_info.json"
+        for a in self.env_data.trains:
+            logger.info(self.env_data.trains[a])
         with open(output_file, "w") as f:
-            json.dump(self.train_info, f, indent=4)
+            json.dump(self.env_data.trains, f, indent=4)
         logger.info(f"Train info saved to {output_file}")
 
-        landscape = LandscapeBuilder(output_dir, self.grid, time_frame=self.time_frame, train_info=self.train_info, cell_size=self.cell_size)
+        landscape = LandscapeBuilder(output_dir, env_data=self.env_data, time_frame=self.time_frame, cell_size=self.cell_size)
         html_rendering = generate_html(self.env_name, landscape, milliseconds_per_step=self.milliseconds_per_step)
         with open(Path(output_dir) / "visualization.html", "w") as f:
             f.write(html_rendering)
@@ -141,17 +140,3 @@ def get_position_and_direction(agent):
         direction = agent.initial_configuration[1]
     direction = DIR_MAP[direction]
     return (x, y), direction
-
-def grid_to_dict(env: RailEnv) -> dict:
-    """
-    Convert the grid of a RailEnv into a dictionary representation.
-    """
-
-    rail_map = env.rail.grid
-    height, width = env.height, env.width
-    grid_dict = {}
-    for row in range(height):
-        grid_dict[row] = {}
-        for col in range(width):
-            grid_dict[row][col] = str(rail_map[row][col])
-    return grid_dict

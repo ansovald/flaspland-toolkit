@@ -1,0 +1,256 @@
+<ns0:svg xmlns:ns0="http://www.w3.org/2000/svg" version="1.1" id="Ebene_1" x="0px" y="0px" viewBox="0 0 240 240" style="enable-background:new 0 0 240 240;" xml:space="preserve">
+<ns0:style type="text/css">.no-fill{fill:none;}.buildings-14{fill:#d9d9d9;}.railroad-tie{fill:#978679;}.station-0{fill:#3d3d3d;}.station-1{fill:#ffffff;}.station-2{fill:#d50000;}.station-3{fill:#858b8a;}.station-4{fill:#e20613;}.station-5{fill:#ececec;}.station-6{fill:#585858;}.station-7{fill:#1d1d1b;}.buildings-30{fill:#9ea5a3;}</ns0:style>
+<ns0:g>
+	<ns0:rect class="no-fill" width="240" height="240" />
+</ns0:g>
+<ns0:rect x="110" y="182.5" transform="matrix(1.143782e-06 1 -1 1.143782e-06 324.9999 50.9997)" class="buildings-14" width="54" height="11" />
+<ns0:rect x="76" y="182.5" transform="matrix(1.143782e-06 1 -1 1.143782e-06 291 84.9997)" class="buildings-14" width="54" height="11" />
+<ns0:g>
+	<ns0:g>
+		<ns0:rect x="111.74" y="3.87" class="railroad-tie" width="16.56" height="3.29" />
+		<ns0:rect x="111.74" y="14.88" class="railroad-tie" width="16.56" height="3.29" />
+		<ns0:rect x="111.74" y="25.9" class="railroad-tie" width="16.56" height="3.29" />
+		<ns0:rect x="111.74" y="36.92" class="railroad-tie" width="16.56" height="3.29" />
+		<ns0:rect x="111.74" y="47.93" class="railroad-tie" width="16.56" height="3.29" />
+		<ns0:rect x="111.74" y="58.95" class="railroad-tie" width="16.56" height="3.29" />
+		<ns0:rect x="111.74" y="69.97" class="railroad-tie" width="16.56" height="3.29" />
+		<ns0:rect x="111.74" y="80.99" class="railroad-tie" width="16.56" height="3.29" />
+		<ns0:rect x="111.74" y="92" class="railroad-tie" width="16.56" height="3.29" />
+		<ns0:rect x="111.74" y="102.6" class="railroad-tie" width="16.56" height="3.29" />
+		<ns0:rect x="111.74" y="112.86" class="railroad-tie" width="16.56" height="3.29" />
+	</ns0:g>
+	<ns0:g>
+		<ns0:rect x="115.21" y="0" class="station-0" width="1.33" height="120" />
+		<ns0:rect x="123.5" y="0" class="station-0" width="1.33" height="120" />
+	</ns0:g>
+</ns0:g>
+<ns0:g>
+	<ns0:g>
+		<ns0:rect x="111.74" y="123.87" class="railroad-tie" width="16.56" height="3.29" />
+		<ns0:rect x="111.74" y="134.88" class="railroad-tie" width="16.56" height="3.29" />
+		<ns0:rect x="111.74" y="145.9" class="railroad-tie" width="16.56" height="3.29" />
+		<ns0:rect x="111.74" y="156.92" class="railroad-tie" width="16.56" height="3.29" />
+		<ns0:rect x="111.74" y="167.93" class="railroad-tie" width="16.56" height="3.29" />
+		<ns0:rect x="111.74" y="178.95" class="railroad-tie" width="16.56" height="3.29" />
+		<ns0:rect x="111.74" y="189.97" class="railroad-tie" width="16.56" height="3.29" />
+		<ns0:rect x="111.74" y="200.99" class="railroad-tie" width="16.56" height="3.29" />
+		<ns0:rect x="111.74" y="212" class="railroad-tie" width="16.56" height="3.29" />
+		<ns0:rect x="111.74" y="222.6" class="railroad-tie" width="16.56" height="3.29" />
+		<ns0:rect x="111.74" y="232.86" class="railroad-tie" width="16.56" height="3.29" />
+	</ns0:g>
+	<ns0:g>
+		<ns0:rect x="115.21" y="120" class="station-0" width="1.33" height="120" />
+		<ns0:rect x="123.5" y="120" class="station-0" width="1.33" height="120" />
+	</ns0:g>
+</ns0:g>
+<ns0:rect x="61" y="69" class="station-1" width="118" height="92" />
+<ns0:g>
+	<ns0:g>
+		<ns0:polygon class="station-2" points="145.31,119.74 145.31,113.78 145.31,108.54 109.08,108.54 94.79,108.54 94.79,119.74 70.39,119.74     70.39,152.5 94.79,152.5 109.08,152.5 120.25,152.5 145.31,152.5 169.7,152.5 169.7,119.74   " />
+		<ns0:polygon class="station-2" points="148.51,105.94 120.17,88.74 92.3,105.93 92.3,107.66 148.51,107.66   " />
+	</ns0:g>
+	<ns0:g>
+		<ns0:polygon class="no-fill" points="92.3,105.93 92.3,107.66 148.51,107.66 148.51,105.94 120.17,88.74   " />
+		<ns0:path class="station-3" d="M120.16,85.96l-29.49,18.19v5.91h59.46v-5.91L120.16,85.96z M148.51,107.66H92.3v-1.73l27.87-17.19    l28.34,17.2V107.66z" />
+	</ns0:g>
+	<ns0:polygon class="station-4" points="120.44,82.35 127.82,80.62 127.82,74.99 120.44,76.73  " />
+	<ns0:rect x="119.68" y="76.72" class="station-3" width="0.75" height="11.5" />
+	<ns0:rect x="69.12" y="115.82" class="station-3" width="101.86" height="3.92" />
+	<ns0:rect x="69.12" y="152.5" class="station-3" width="101.86" height="2" />
+	<ns0:g>
+		<ns0:rect x="113.11" y="115.5" class="station-5" width="13.82" height="10.5" />
+		<ns0:polygon class="buildings-14" points="126.93,125.99 116.03,125.99 121.48,115.5 126.93,115.5   " />
+		<ns0:rect x="113.11" y="125.99" class="station-6" width="13.82" height="0.69" />
+	</ns0:g>
+	<ns0:rect x="98.12" y="115.84" class="station-5" width="6.79" height="10.5" />
+	<ns0:polygon class="buildings-14" points="104.9,126.34 99.55,126.34 102.23,115.84 104.9,115.84  " />
+	<ns0:rect x="98.12" y="126.34" class="station-6" width="6.79" height="0.69" />
+	<ns0:rect x="135.19" y="115.84" class="station-5" width="6.79" height="10.5" />
+	<ns0:polygon class="buildings-14" points="141.98,126.34 136.63,126.34 139.3,115.84 141.98,115.84  " />
+	<ns0:rect x="135.19" y="126.34" class="station-6" width="6.79" height="0.69" />
+	<ns0:rect x="98.12" y="131.26" class="station-5" width="6.79" height="10.5" />
+	<ns0:polygon class="buildings-14" points="104.9,141.76 99.55,141.76 102.23,131.26 104.9,131.26  " />
+	<ns0:rect x="98.12" y="141.76" class="station-6" width="6.79" height="0.69" />
+	<ns0:rect x="135.19" y="131.26" class="station-5" width="6.79" height="10.5" />
+	<ns0:polygon class="buildings-14" points="141.98,141.76 136.63,141.76 139.3,131.26 141.98,131.26  " />
+	<ns0:rect x="135.19" y="141.76" class="station-6" width="6.79" height="0.69" />
+	<ns0:g>
+		<ns0:g>
+			<ns0:rect x="112.42" y="136.93" class="station-5" width="15.06" height="14.59" />
+			<ns0:polygon class="buildings-14" points="127.48,151.52 115.61,151.52 121.55,136.93 127.48,136.93    " />
+		</ns0:g>
+		<ns0:rect x="112.42" y="151.52" class="station-6" width="15.06" height="0.95" />
+		<ns0:rect x="112.42" y="136.12" class="station-6" width="15.06" height="0.81" />
+		
+			<ns0:rect x="119.45" y="144.15" transform="matrix(-1.836970e-16 1 -1 -1.836970e-16 271.9261 16.666)" class="station-6" width="16.35" height="0.3" />
+		
+			<ns0:rect x="104.12" y="144.15" transform="matrix(-1.836970e-16 1 -1 -1.836970e-16 256.593 31.9991)" class="station-6" width="16.35" height="0.3" />
+		
+			<ns0:rect x="111.92" y="144.15" transform="matrix(-1.836970e-16 1 -1 -1.836970e-16 264.3965 24.1956)" class="station-6" width="16.35" height="0.3" />
+		<ns0:g>
+			<ns0:rect x="118.29" y="144.62" class="station-6" width="0.93" height="0.55" />
+			<ns0:rect x="120.98" y="144.62" class="station-6" width="0.93" height="0.55" />
+		</ns0:g>
+	</ns0:g>
+	<ns0:rect x="149.03" y="147.91" class="station-6" width="6.79" height="0.69" />
+	<ns0:rect x="84.38" y="121.99" class="station-5" width="6.79" height="10.5" />
+	<ns0:polygon class="buildings-14" points="91.16,132.49 85.81,132.49 88.49,121.99 91.16,121.99  " />
+	<ns0:rect x="84.38" y="132.49" class="station-6" width="6.79" height="0.69" />
+	<ns0:rect x="84.38" y="137.41" class="station-5" width="6.79" height="10.5" />
+	<ns0:polygon class="buildings-14" points="91.16,147.91 85.81,147.91 88.49,137.41 91.16,137.41  " />
+	<ns0:rect x="84.38" y="147.91" class="station-6" width="6.79" height="0.69" />
+	<ns0:rect x="74.62" y="121.99" class="station-5" width="6.79" height="10.5" />
+	<ns0:polygon class="buildings-14" points="81.41,132.49 76.06,132.49 78.74,121.99 81.41,121.99  " />
+	<ns0:rect x="74.62" y="132.49" class="station-6" width="6.79" height="0.69" />
+	<ns0:rect x="74.62" y="137.41" class="station-5" width="6.79" height="10.5" />
+	<ns0:polygon class="buildings-14" points="81.41,147.91 76.06,147.91 78.74,137.41 81.41,137.41  " />
+	<ns0:rect x="74.62" y="147.91" class="station-6" width="6.79" height="0.69" />
+	<ns0:rect x="158.78" y="121.99" class="station-5" width="6.79" height="10.5" />
+	<ns0:polygon class="buildings-14" points="165.57,132.49 160.22,132.49 162.89,121.99 165.57,121.99  " />
+	<ns0:rect x="158.78" y="132.49" class="station-6" width="6.79" height="0.69" />
+	<ns0:rect x="158.78" y="137.41" class="station-5" width="6.79" height="10.5" />
+	<ns0:polygon class="buildings-14" points="165.57,147.91 160.22,147.91 162.89,137.41 165.57,137.41  " />
+	<ns0:rect x="158.78" y="147.91" class="station-6" width="6.79" height="0.69" />
+	<ns0:rect x="149.03" y="121.99" class="station-5" width="6.79" height="10.5" />
+	<ns0:polygon class="buildings-14" points="155.81,132.49 150.46,132.49 153.14,121.99 155.81,121.99  " />
+	<ns0:rect x="149.03" y="137.41" class="station-5" width="6.79" height="10.5" />
+	<ns0:polygon class="buildings-14" points="155.81,147.91 150.46,147.91 153.14,137.41 155.81,137.41  " />
+	<ns0:rect x="149.03" y="132.49" class="station-6" width="6.79" height="0.69" />
+	<ns0:g>
+		<ns0:rect x="113.11" y="119.04" class="station-6" width="13.82" height="0.69" />
+	</ns0:g>
+	<ns0:rect x="98.12" y="119.39" class="station-6" width="6.79" height="0.69" />
+	<ns0:rect x="135.19" y="119.39" class="station-6" width="6.79" height="0.69" />
+	<ns0:rect x="98.12" y="134.81" class="station-6" width="6.79" height="0.69" />
+	<ns0:rect x="135.19" y="134.81" class="station-6" width="6.79" height="0.69" />
+	<ns0:rect x="149.03" y="140.96" class="station-6" width="6.79" height="0.69" />
+	<ns0:rect x="84.38" y="125.54" class="station-6" width="6.79" height="0.69" />
+	<ns0:rect x="84.38" y="140.96" class="station-6" width="6.79" height="0.69" />
+	<ns0:rect x="74.62" y="125.54" class="station-6" width="6.79" height="0.69" />
+	<ns0:rect x="74.62" y="140.96" class="station-6" width="6.79" height="0.69" />
+	<ns0:rect x="158.78" y="125.54" class="station-6" width="6.79" height="0.69" />
+	<ns0:rect x="158.78" y="140.96" class="station-6" width="6.79" height="0.69" />
+	<ns0:rect x="149.03" y="125.54" class="station-6" width="6.79" height="0.69" />
+	<ns0:g>
+		<ns0:path class="station-1" d="M125.54,99.19c0-2.84-2.3-5.14-5.14-5.14c-2.84,0-5.14,2.3-5.14,5.14c0,2.84,2.3,5.14,5.14,5.14    C123.24,104.34,125.54,102.03,125.54,99.19z" />
+		<ns0:g>
+			<ns0:path class="station-7" d="M120.4,103.76c-2.52,0-4.57-2.05-4.57-4.57c0-2.52,2.05-4.57,4.57-4.57c2.52,0,4.57,2.05,4.57,4.57     C124.97,101.71,122.92,103.76,120.4,103.76z M120.4,95.15c-2.23,0-4.04,1.81-4.04,4.04c0,2.23,1.81,4.04,4.04,4.04     c2.23,0,4.04-1.81,4.04-4.04C124.45,96.97,122.63,95.15,120.4,95.15z" />
+		</ns0:g>
+		<ns0:path class="station-7" d="M123.25,98.93h-2.58V96.1c0-0.14-0.12-0.26-0.26-0.26c-0.14,0-0.26,0.12-0.26,0.26v3.1    c0,0.14,0.12,0.26,0.26,0.26h2.85c0.14,0,0.26-0.12,0.26-0.26C123.51,99.05,123.39,98.93,123.25,98.93z" />
+	</ns0:g>
+	<ns0:g>
+		<ns0:g>
+			<ns0:g>
+				<ns0:g>
+					<ns0:rect x="130.27" y="132.21" class="buildings-30" width="2.33" height="19.15" />
+				</ns0:g>
+				<ns0:g>
+					<ns0:rect x="131.43" y="132.21" class="station-3" width="1.16" height="19.15" />
+				</ns0:g>
+				<ns0:rect x="129.02" y="151.36" class="buildings-30" width="4.84" height="1.28" />
+				<ns0:g>
+					<ns0:rect x="132.02" y="151.36" class="buildings-30" width="1.84" height="1.28" />
+				</ns0:g>
+				<ns0:rect x="129.51" y="150.83" class="buildings-30" width="3.85" height="0.79" />
+				<ns0:g>
+					<ns0:rect x="131.6" y="150.83" class="buildings-30" width="1.76" height="0.79" />
+				</ns0:g>
+				<ns0:path class="buildings-30" d="M130.68,133.18c0-0.54-0.43-0.97-0.97-0.97s-0.97,0.43-0.97,0.97c0,0.54,0.43,0.97,0.97,0.97      S130.68,133.72,130.68,133.18z" />
+				<ns0:rect x="129.71" y="132.21" class="buildings-30" width="3.45" height="0.65" />
+				<ns0:g>
+					<ns0:rect x="131.79" y="132.21" class="buildings-30" width="1.37" height="0.65" />
+				</ns0:g>
+				<ns0:g>
+					<ns0:path class="buildings-30" d="M134.13,133.18c0-0.54-0.43-0.97-0.97-0.97c-0.54,0-0.97,0.43-0.97,0.97c0,0.54,0.43,0.97,0.97,0.97       C133.69,134.15,134.13,133.72,134.13,133.18z" />
+				</ns0:g>
+			</ns0:g>
+		</ns0:g>
+		<ns0:g>
+			<ns0:g>
+				<ns0:g>
+					<ns0:rect x="107.33" y="132.21" class="buildings-30" width="2.33" height="19.15" />
+				</ns0:g>
+				<ns0:g>
+					<ns0:rect x="108.49" y="132.21" class="station-3" width="1.16" height="19.15" />
+				</ns0:g>
+				<ns0:rect x="106.07" y="151.36" class="buildings-30" width="4.84" height="1.28" />
+				<ns0:g>
+					<ns0:rect x="109.08" y="151.36" class="buildings-30" width="1.84" height="1.28" />
+				</ns0:g>
+				<ns0:rect x="106.57" y="150.83" class="buildings-30" width="3.85" height="0.79" />
+				<ns0:g>
+					<ns0:rect x="108.66" y="150.83" class="buildings-30" width="1.76" height="0.79" />
+				</ns0:g>
+				<ns0:path class="buildings-30" d="M107.74,133.18c0-0.54-0.43-0.97-0.97-0.97c-0.54,0-0.97,0.43-0.97,0.97c0,0.54,0.43,0.97,0.97,0.97      C107.3,134.15,107.74,133.72,107.74,133.18z" />
+				<ns0:rect x="106.77" y="132.21" class="buildings-30" width="3.45" height="0.65" />
+				<ns0:g>
+					<ns0:rect x="108.84" y="132.21" class="buildings-30" width="1.37" height="0.65" />
+				</ns0:g>
+				<ns0:g>
+					<ns0:path class="buildings-30" d="M111.19,133.18c0-0.54-0.43-0.97-0.97-0.97c-0.54,0-0.97,0.43-0.97,0.97c0,0.54,0.43,0.97,0.97,0.97       C110.75,134.15,111.19,133.72,111.19,133.18z" />
+				</ns0:g>
+			</ns0:g>
+		</ns0:g>
+	</ns0:g>
+	<ns0:g>
+		<ns0:g>
+			<ns0:g>
+				<ns0:g>
+					<ns0:rect x="130.27" y="110.12" class="buildings-30" width="2.33" height="19.15" />
+				</ns0:g>
+				<ns0:g>
+					<ns0:rect x="131.43" y="110.12" class="station-3" width="1.16" height="19.15" />
+				</ns0:g>
+				<ns0:rect x="129.02" y="129.26" class="buildings-30" width="4.84" height="1.28" />
+				<ns0:g>
+					<ns0:rect x="132.02" y="129.26" class="buildings-30" width="1.84" height="1.28" />
+				</ns0:g>
+				<ns0:rect x="129.51" y="128.74" class="buildings-30" width="3.85" height="0.79" />
+				<ns0:g>
+					<ns0:rect x="131.6" y="128.74" class="buildings-30" width="1.76" height="0.79" />
+				</ns0:g>
+				<ns0:path class="buildings-30" d="M130.68,111.09c0-0.54-0.43-0.97-0.97-0.97s-0.97,0.43-0.97,0.97c0,0.54,0.43,0.97,0.97,0.97      S130.68,111.62,130.68,111.09z" />
+				<ns0:rect x="129.71" y="110.12" class="buildings-30" width="3.45" height="0.65" />
+				<ns0:g>
+					<ns0:rect x="131.79" y="110.12" class="buildings-30" width="1.37" height="0.65" />
+				</ns0:g>
+				<ns0:g>
+					<ns0:path class="buildings-30" d="M134.13,111.09c0-0.54-0.43-0.97-0.97-0.97c-0.54,0-0.97,0.43-0.97,0.97c0,0.54,0.43,0.97,0.97,0.97       C133.69,112.06,134.13,111.62,134.13,111.09z" />
+				</ns0:g>
+			</ns0:g>
+		</ns0:g>
+		<ns0:g>
+			<ns0:g>
+				<ns0:g>
+					<ns0:rect x="107.33" y="110.12" class="buildings-30" width="2.33" height="19.15" />
+				</ns0:g>
+				<ns0:g>
+					<ns0:rect x="108.49" y="110.12" class="station-3" width="1.16" height="19.15" />
+				</ns0:g>
+				<ns0:rect x="106.07" y="129.26" class="buildings-30" width="4.84" height="1.28" />
+				<ns0:g>
+					<ns0:rect x="109.08" y="129.26" class="buildings-30" width="1.84" height="1.28" />
+				</ns0:g>
+				<ns0:rect x="106.57" y="128.74" class="buildings-30" width="3.85" height="0.79" />
+				<ns0:g>
+					<ns0:rect x="108.66" y="128.74" class="buildings-30" width="1.76" height="0.79" />
+				</ns0:g>
+				<ns0:path class="buildings-30" d="M107.74,111.09c0-0.54-0.43-0.97-0.97-0.97c-0.54,0-0.97,0.43-0.97,0.97c0,0.54,0.43,0.97,0.97,0.97      C107.3,112.06,107.74,111.62,107.74,111.09z" />
+				<ns0:rect x="106.77" y="110.12" class="buildings-30" width="3.45" height="0.65" />
+				<ns0:g>
+					<ns0:rect x="108.84" y="110.12" class="buildings-30" width="1.37" height="0.65" />
+				</ns0:g>
+				<ns0:g>
+					<ns0:path class="buildings-30" d="M111.19,111.09c0-0.54-0.43-0.97-0.97-0.97c-0.54,0-0.97,0.43-0.97,0.97c0,0.54,0.43,0.97,0.97,0.97       C110.75,112.06,111.19,111.62,111.19,111.09z" />
+				</ns0:g>
+			</ns0:g>
+		</ns0:g>
+	</ns0:g>
+	<ns0:rect x="105.2" y="129.5" class="buildings-30" width="29.54" height="2.71" />
+	<ns0:rect x="105.2" y="130.85" class="station-3" width="29.54" height="1.36" />
+	<ns0:polygon class="station-1" points="123.58,80.77 124.68,80.46 124.68,76.57 123.58,76.88  " />
+	<ns0:polygon class="station-1" points="122.24,78.54 122.24,79.64 126.03,78.8 126.03,77.7  " />
+</ns0:g>
+<ns0:rect x="110" y="47.5" transform="matrix(1.143782e-06 1 -1 1.143782e-06 189.9999 -84.0001)" class="buildings-14" width="54" height="11" />
+<ns0:rect x="76" y="47.5" transform="matrix(1.143782e-06 1 -1 1.143782e-06 155.9999 -50.0001)" class="buildings-14" width="54" height="11" />
+</ns0:svg>
