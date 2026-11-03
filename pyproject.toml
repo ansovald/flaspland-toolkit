@@ -18,6 +18,7 @@ dependencies = [
     "clingo>=5.6",
     "imageio",
     "Pillow",
+    "pydreamplet",
 ]
 
 [project.urls]

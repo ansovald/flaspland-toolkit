@@ -10,25 +10,41 @@ import warnings
 import os
 import time
 import pickle
-import tempfile
+import logging
+
+# import tempfile
 from argparse import ArgumentParser, Namespace
 from pathlib import Path
+from tqdm import tqdm
 
 # custom modules
 from .modules.api import FlatlandPlan
 from .modules.convert import convert_malfunctions_to_clingo, convert_formers_to_clingo, convert_futures_to_clingo
+from .modules.render_tools import GifRenderer, HtmlRenderer
+from .modules.defs import DIR_MAP, ACTION_MAP, STATE_MAP
 
 # clingo
 from clingo.application import clingo_main
 
-# rendering visualizations
-from flatland.envs.rail_env import RailEnvActions
-from flatland.utils.rendertools import RenderTool
-import imageio.v2 as imageio
-from PIL import Image, ImageDraw, ImageFont
+# # rendering visualizations
+# from flatland.envs.rail_env import RailEnvActions
+# from flatland.utils.rendertools import RenderTool
+# import imageio.v2 as imageio
+# from PIL import Image, ImageDraw, ImageFont
 
-FONT = Path(__file__).resolve().parent / "modules" / "LiberationMono-Regular.ttf"
+# FONT = Path(__file__).resolve().parent / "modules" / "LiberationMono-Regular.ttf"
 
+LOG_LEVEL = logging.INFO
+LOG_FILE = "flaspland.log"
+logging.basicConfig(
+    level=LOG_LEVEL,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler(LOG_FILE, encoding="utf-8", mode='a'),
+    ],
+)
+logger = logging.getLogger(__name__)
 
 class MalfunctionManager():
     def __init__(self, num_agents):
@@ -118,6 +134,7 @@ class OutputLogManager():
             for log in self.logs:
                 f.write(log)
 
+
 def get_position_and_direction(agent) -> tuple:
     """ get an agent's position and direction; position is None while the agent is off the map """
     if agent.current_configuration is not None:
@@ -144,7 +161,8 @@ def get_args(argv=None):
     parser.add_argument('env', type=str, help='the Flatland environment, a .pkl file created by flaspland build')
     parser.add_argument('encodings', type=str, nargs='+', help='one or more encodings (.lp) to load into clingo, e.g. a single file of #include statements')
     parser.add_argument('--time-limit', type=int, metavar='SECONDS', help='stop each clingo call after SECONDS and use the best plan found so far')
-    parser.add_argument('--no-render', action='store_true', help='if included, run the Flatland simulation but do not render a GIF')
+    parser.add_argument('--render-gif', action='store_true', default=False, help='if included, run the Flatland simulation but do not render a GIF')
+    parser.add_argument('--render-html', action="store_true", default=True, help='if included, render an HTML visualization')
     args = parser.parse_args(argv)
 
     if args.time_limit is not None:
@@ -174,34 +192,32 @@ def main(argv=None) -> int:
             env = pickle.load(f)
         except (ModuleNotFoundError, AttributeError) as e:
             raise SystemExit(f"Could not load '{args.env}' ({e}). It was probably created with a different version of flatland; regenerate it with 'flaspland build'.")
-    no_render = args.no_render
+    
+    render_gif = args.render_gif
+    render_html = args.render_html
+    env_renderers = []
+    env_name = Path(args.env).stem
+    if render_gif:
+        gif_renderer = GifRenderer(env=env, env_name=env_name)
+        env_renderers.append(gif_renderer)
+    if render_html:
+        html_renderer = HtmlRenderer(env=env, env_name=env_name)
+        env_renderers.append(html_renderer)
 
     # create manager objects
     mal = MalfunctionManager(env.get_num_agents())
     sim = SimulationManager(env, args.encodings, args.clingo_args)
     log = OutputLogManager()
 
-    # envrionment rendering
-    env_renderer = None
-    if not no_render:
-        env_renderer = RenderTool(env, gl="PILSVG")
-        env_renderer.reset()
-        images = []
-
-    # temporary directory for the rendered frames
-    frames = tempfile.TemporaryDirectory()
-    action_map = {RailEnvActions.MOVE_LEFT:'move_left', RailEnvActions.MOVE_FORWARD:'move_forward', RailEnvActions.MOVE_RIGHT:'move_right', RailEnvActions.STOP_MOVING:'wait'}
-    state_map = {0:'waiting', 1:'ready to depart', 2:'malfunction (off map)', 3:'moving', 4:'stopped', 5:'malfunction (on map)', 6:'done'}
-    dir_map = {0:'n', 1:'e', 2:'s', 3:'w'}
-
     actions = sim.build_actions()
 
-    timestep = 0
-    while len(actions) > timestep:
+    logger.info(f"Starting simulation with environment {args.env} and encoding(s) {args.encodings}")
+
+    for timestep in tqdm(range(len(actions)), desc="Simulating timesteps"):
         # add to the log
         for a in actions[timestep]:
             position, direction = get_position_and_direction(env.agents[a])
-            log.add(f'{a};{timestep};{position};{dir_map[direction]};{state_map[env.agents[a].state]};{action_map[actions[timestep][a]]}\n')
+            log.add(f'{a};{timestep};{position};{DIR_MAP[direction]};{STATE_MAP[env.agents[a].state]};{ACTION_MAP[actions[timestep][a]]}\n')
 
         _, _, done, info = env.step(actions[timestep])
 
@@ -218,57 +234,23 @@ def main(argv=None) -> int:
             actions = sim.update_actions(context)
 
         mal.deduct() #??? where in the loop should this go - before context?
-        
-        # render an image
-        filename = os.path.join(frames.name, 'flatland_frame_{:04d}.png'.format(timestep))
-        if env_renderer is not None:
-            env_renderer.render_env(show=True, show_observations=False, show_predictions=False)
-            env_renderer.gl.save_image(filename)
-            env_renderer.reset()
 
-            # add red numbers in the corner
-            with Image.open(filename) as img:
-                draw = ImageDraw.Draw(img)
-                padding = 10
-                font_size = int(min(img.width, img.height) * 0.10)
-                try:
-                    font = ImageFont.truetype(str(FONT), font_size)
-                except IOError:
-                    font = ImageFont.load_default()
-                
-                # prepare text
-                text = f"{timestep}"
-                size = font.getbbox(text)
-                text_width = size[2]-size[0]
-                text_position = (img.width - text_width - padding, padding)
-                
-                # draw text borders
-                x, y = text_position
-                border_color = "black"
-                for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (-1, 1), (1, -1), (1, 1)]:
-                    draw.text((x + dx, y + dy), text, fill=border_color, font=font)
-                
-                # draw text
-                draw.text(text_position, text, fill="red", font=font)
-                img.save(filename)
-
-            images.append(imageio.imread(filename))
-        # images.append(imageio.imread(filename))
+        if env_renderers:
+            for renderer in env_renderers:
+                renderer.render_frame(timestep=timestep, actions=actions)
 
         timestep = timestep + 1
-
-    frames.cleanup()
 
     # create a new folder for the gif and output log
     output_dir = create_output_dir()
 
-    # combine images into gif
-    if not no_render:
-        imageio.mimsave(os.path.join(output_dir, "animation.gif"), images, format='GIF', loop=0, duration=240)
+    for renderer in env_renderers:
+        renderer.save(output_dir=output_dir, loop=0, duration=240)
 
     # save output log
     log.save(output_dir)
-    print(f"flaspland: results saved to {output_dir}")
+
+    logger.info(f"Results saved to {output_dir}")
     return(0)
 
 
