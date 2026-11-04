@@ -6,7 +6,7 @@ from PIL import Image, ImageDraw, ImageFont
 from pathlib import Path
 import tempfile
 
-from .render_html import LandscapeBuilder, generate_html, EnvData
+from .render_html import LandscapeBuilder, EnvData
 from .defs import DIR_MAP, ACTION_MAP
 
 import json
@@ -38,9 +38,6 @@ class GifRenderer(Renderer):
         self.font = font
         if self.font is None:
             self.font = Path(__file__).resolve().parent / "LiberationMono-Regular.ttf"
-
-    # def __del__(self):
-    #     self.frames.cleanup()
 
     def render_frame(self, timestep, *args, **kwargs):
         filename = Path(self.frames.name) / f'flatland_frame_{timestep:04d}.png'
@@ -99,7 +96,7 @@ class HtmlRenderer(Renderer):
         self.time_frame = 0
         self.cell_size = cell_size
         self.milliseconds_per_step = milliseconds_per_step
-        self.env_data = EnvData(env)
+        self.env_data = EnvData(env, env_name)
 
     def render_frame(self, timestep, actions):
         for a in actions[timestep]:
@@ -113,18 +110,13 @@ class HtmlRenderer(Renderer):
         self.time_frame = timestep
 
     def save(self, output_dir, *args, **kwargs):
-        output_file = Path(output_dir) / "train_info.json"
-        for a in self.env_data.trains:
-            logger.info(self.env_data.trains[a])
+        output_file = output_dir / "train_info.json"
         with open(output_file, "w") as f:
             json.dump(self.env_data.trains, f, indent=4)
         logger.info(f"Train info saved to {output_file}")
 
         landscape = LandscapeBuilder(output_dir, env_data=self.env_data, time_frame=self.time_frame, cell_size=self.cell_size)
-        html_rendering = generate_html(self.env_name, landscape, milliseconds_per_step=self.milliseconds_per_step)
-        with open(Path(output_dir) / "visualization.html", "w") as f:
-            f.write(html_rendering)
-        logger.info(f"Visualization saved to {Path(output_dir) / 'visualization.html'}")
+        landscape.save_html()
 
 
 def get_position_and_direction(agent):

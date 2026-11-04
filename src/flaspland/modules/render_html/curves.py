@@ -1,7 +1,8 @@
 from __future__ import annotations
 from dataclasses import dataclass
 import logging
-logger = logging.getLogger("CURVES")
+
+logger = logging.getLogger(__name__)
 
 
 """
@@ -82,7 +83,7 @@ class Point:
         )
     
     def abs_string(self, cell_size):
-        logger.info(f"Making absolute string for point {self} with cell size {cell_size}")
+        logger.debug(f"Making absolute string for point {self} with cell size {cell_size}")
         abs_point = self.make_abs(cell_size)
         return f"{round(abs_point.x, 5)} {round(abs_point.y, 5)}"
     

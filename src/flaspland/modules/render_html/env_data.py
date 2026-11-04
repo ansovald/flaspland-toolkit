@@ -20,7 +20,8 @@ class EnvData:
     extract the relevant information without loading all images, so we have to rebuild it
     """
 
-    def __init__(self, env: RailEnv):
+    def __init__(self, env: RailEnv, env_name: str):
+        self.name = env_name
         self.grid = {}
         self.height = env.height
         self.width = env.width
@@ -31,17 +32,15 @@ class EnvData:
         self.city_size = 1
         if len(env.agents):
             self.city_size = max(1, np.log(1 + len(env.agents)) / 2.5)
-        logger.info(f"City size calculated: {self.city_size}")
+        logger.debug(f"City size calculated: {self.city_size}")
         self._populate_trains(env)
         self._build_background_grid()
         self._populate_grid(env)
-        # self._find_grid_bounds(self.grid)
 
-        # logger.info(f"Environment data populated: grid bounds={self.grid_bounds}, trains={self.trains}, stations={self.stations}, city size={self.city_size}")
-        # logger.info("Background grid built:\n%s", self.background_grid)
+        logger.debug(f"Environment data populated: grid bounds={self.grid_bounds}, trains={self.trains}, stations={self.stations}, city size={self.city_size}")
+        logger.debug("Background grid built:\n%s", self.background_grid)
 
     def _populate_grid(self, env: RailEnv):
-        logger.info(TRACKS_FILES)
         if not self.background_grid:
             logger.warning("Background grid is empty. Populating it first.")
             self._build_background_grid()

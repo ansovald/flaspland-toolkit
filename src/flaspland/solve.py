@@ -7,7 +7,6 @@ Run as `flaspland solve ENV ENCODING [ENCODING ...]`; see `flaspland solve -h`.
 # standard packages
 import sys
 import warnings
-import os
 import time
 import pickle
 import logging
@@ -26,16 +25,11 @@ from .modules.defs import DIR_MAP, ACTION_MAP, STATE_MAP
 # clingo
 from clingo.application import clingo_main
 
-# # rendering visualizations
-# from flatland.envs.rail_env import RailEnvActions
-# from flatland.utils.rendertools import RenderTool
-# import imageio.v2 as imageio
-# from PIL import Image, ImageDraw, ImageFont
-
-# FONT = Path(__file__).resolve().parent / "modules" / "LiberationMono-Regular.ttf"
-
 LOG_LEVEL = logging.INFO
-LOG_FILE = "flaspland.log"
+LOG_DIR = Path("logs")
+LOG_DIR.mkdir(exist_ok=True)
+LOG_FILE = LOG_DIR / "flaspland.log"
+
 logging.basicConfig(
     level=LOG_LEVEL,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -127,9 +121,9 @@ class OutputLogManager():
         """ add info from a timestep to the log """
         self.logs.append(info)
 
-    def save(self,directory) -> None:
+    def save(self, directory: str | Path) -> None:
         """ save output log to local drive """
-        with open(os.path.join(directory, "paths.csv"), "w") as f:
+        with (Path(directory) / "paths.csv").open("w") as f:
             f.write("agent;timestep;position;direction;status;given_command\n")
             for log in self.logs:
                 f.write(log)
@@ -171,49 +165,26 @@ def get_args(argv=None):
     return(args)
 
 
-def create_output_dir() -> str:
+def create_output_dir() -> Path:
     """ create a new folder output/<date>_<time> in the current folder """
     stamp = time.strftime("%Y-%m-%d_%H-%M-%S")
-    path = os.path.join("output", stamp)
+    path = Path("output") / stamp
     number = 1
-    while os.path.exists(path):
+    while path.exists():
         number += 1
-        path = os.path.join("output", f"{stamp}_{number}")
-    os.makedirs(path)
+        path = Path("output") / f"{stamp}_{number}"
+    path.mkdir(parents=True)
     return(path)
 
 
 def main(argv=None) -> int:
     args: Namespace = get_args(argv)
-    if not os.path.isfile(args.env):
+    env_path = Path(args.env)
+    if not env_path.is_file():
         raise SystemExit(f"Environment not found: {args.env}")
-    with open(args.env, "rb") as f:
+    with env_path.open("rb") as f:
         try:
             env = pickle.load(f)
-            # logger.info(f"Environment {args.env} loaded successfully.")
-            # logger.info("stations_links:")
-            # stations_links = env.stations_links
-            # logger.info(f"  {stations_links}")
-            # stations = env.stations_links.stations
-            # logger.info("  Stations:")
-            # for station in stations:
-            #     logger.info(f"    {station}: {stations[station]}")
-            #     stopping_points = stations[station].stopping_points
-            #     for sp in stopping_points:
-            #         logger.info(f"      {sp}")
-            # grid = env.rail.grid
-            # logger.info("  Grid:")
-            # for row in grid:
-            #     logger.info(f"    {row}")
-            # # logger.info("Attributes of environment:")
-            # for attr in dir(env):
-            #     logger.info(f"  {attr}")
-            #     try:
-            #         value = getattr(env, attr)
-            #         logger.info(f"    Value: {value}")
-            #     except Exception as e:
-            #         logger.info(f"    Could not retrieve value: {e}")
-            # exit(0)
         except (ModuleNotFoundError, AttributeError) as e:
             raise SystemExit(f"Could not load '{args.env}' ({e}). It was probably created with a different version of flatland; regenerate it with 'flaspland build'.")
     

@@ -8,34 +8,41 @@ from .svg_files.get_svg import clean_svg_group, sample_scenery_id, get_train_svg
 from .train_paths import TrainPath
 from .env_data import EnvData
 from pathlib import Path as PathlibPath
+import json
 
 import logging
 logger = logging.getLogger(__name__)
 
-SVG_STYLES = PathlibPath(__file__).parent / "svg_files" / "svg_styles.css"
-DYNAMIC_STYLE = PathlibPath(__file__).parent / "standard_style_dynamic.css"
-TRAIN_HOVER_TEMPLATE = PathlibPath(__file__).parent / "train_hover_template.css"
+RESOURCE_DIR = PathlibPath(__file__).resolve().parent
+
+SVG_STYLES = RESOURCE_DIR / "svg_files" / "svg_styles.css"
+DYNAMIC_STYLE = RESOURCE_DIR / "standard_style_dynamic.css"
+TRAIN_HOVER_TEMPLATE = RESOURCE_DIR / "train_hover_template.css"
+
+HTML_TEMPLATE_FILE = RESOURCE_DIR / "html_template.html"
+TRAIN_WIDGET_FILE = RESOURCE_DIR / "train_widget.html"
+PAN_ZOOM_SCRIPT = RESOURCE_DIR / "svg-pan-zoom.js"
 
 class LandscapeBuilder:
-    def __init__(self, base_dir, env_data: EnvData, time_frame: int=None, cell_size=25, style_files=[SVG_STYLES, DYNAMIC_STYLE], hover_template=TRAIN_HOVER_TEMPLATE):
+    def __init__(self, base_dir: PathlibPath, env_data: EnvData, time_frame: int=None, cell_size=25, style_files=[SVG_STYLES, DYNAMIC_STYLE], hover_template=TRAIN_HOVER_TEMPLATE, save=False):
         self.base_dir = base_dir
         self.env_data = env_data
         self.time_frame = time_frame
         self.cell_size = cell_size        
         self.prepare_dynamic_styles(
             styles=style_files,
-            train_hover_style_path=TRAIN_HOVER_TEMPLATE
+            train_hover_style_path=hover_template
             )
-        self.compute_dimensions()
+        self.height = self.env_data.height + 2
+        self.width = self.env_data.width + 2
         self.use_groups = []
         self.canvas = self.build_landscape()
-        self.control_canvas = self.build_controls()
-        self.train_path_group = G(id="train_paths", class_name="train_paths")
-        self.canvas.append(self.train_path_group)
+        self.control_canvas = self.build_controls(control_cell_size=self.cell_size)
         self.train_paths = self.prepare_train_paths()
         self.display_states = {}
         self.place_trains()
-        self.save_svg()
+        if save:
+            self.save_svg()
 
     def prepare_dynamic_styles(self, styles, train_hover_style_path):
         # pre-computes all elements that depend on cell size
@@ -93,21 +100,6 @@ class LandscapeBuilder:
     
     def control_svg_string(self):
         return self.control_canvas.to_string()
-
-    def compute_dimensions(self):
-        # max_x = 0
-        # max_y = 0
-        # for y in grid:
-        #     if y + 1 > max_y:
-        #         max_y = y + 1
-        #     for x in grid[y]:
-        #         if x + 1 > max_x:
-        #             max_x = x + 1
-        # self.grid_width = max_x
-        # self.grid_height = max_y
-
-        self.height = self.env_data.height + 2
-        self.width = self.env_data.width + 2
 
     def get_abs_coord(self, coord, grid_offset=True):
         offset = 1 if grid_offset else 0
@@ -243,6 +235,8 @@ class LandscapeBuilder:
         Generates a default path element for each train to be populated later.
         Added to self.train_path_group so that it appears behind trains.
         """
+        self.train_path_group = G(id="train_paths", class_name="train_paths")
+        self.canvas.append(self.train_path_group)
         train_paths = {}
         for train_id in self.env_data.trains.keys():
             path_element = Path(
@@ -271,7 +265,7 @@ class LandscapeBuilder:
             train_group = G(id=f"train_{train_id}_main", class_name="train")
             train_info = self.env_data.trains[train_id]
             # build train path
-            logger.info(f"Initializing TrainPath for train {train_id} with time frame {self.time_frame}")
+            logger.debug(f"Initializing TrainPath for train {train_id} with time frame {self.time_frame}")
             train_path_builder = TrainPath(train_id, train_info, self.time_frame, self.cell_size)
             path_string = train_path_builder.path_string
             self.display_states[train_id] = train_path_builder.get_display_states()
@@ -279,7 +273,7 @@ class LandscapeBuilder:
 
             # Prepare train SVG
             train_render_group = get_train_svg(train_id, self.cell_size, scale=240)
-            logger.info(f"Train render group for train {train_id} prepared")
+            logger.debug(f"Train render group for train {train_id} prepared")
 
             # Train rotation group normalizes position so that mid point is at (0,0) for easier rotation (set in JavaScript)
             # rotation needs to be set to 90 degrees initially to align with the motion path direction
@@ -344,8 +338,8 @@ class LandscapeBuilder:
 
             self.canvas.append(train_group)
     
-    def build_controls(self):
-        control_cell_size = 25
+    def build_controls(self, control_cell_size):
+        control_cell_size = control_cell_size
         control_width = 1000
         control_height = 2 * control_cell_size
         control_canvas = SVG(control_width, control_height)
@@ -413,4 +407,102 @@ class LandscapeBuilder:
         step_group.append(step_label)
         slider_group.append(step_group)
         return control_canvas
+
+    def build_html(self, milliseconds_per_step=400, html_template_file=HTML_TEMPLATE_FILE, train_widget_file=TRAIN_WIDGET_FILE, pan_zoom_script=PAN_ZOOM_SCRIPT):
+        svg_output = self.canvas_string()
+        control_svg_output = self.control_svg_string()
+
+        with open(html_template_file, "r") as f:
+            html_template = f.read()
+        with open(pan_zoom_script, "r") as f:
+                pan_zoom_script_content = f.read()
+        
+        html_output = html_template.replace("{{HEADING}}", f"Flaspland SVG Animation: {self.env_data.name}")
+        html_output = html_output.replace("{{STANDARD_CSS}}", self.standard_style)
+        html_output = html_output.replace("{{INLINE_SVG}}", svg_output)
+        html_output = html_output.replace("{{CONTROL_SVG}}", control_svg_output)
+        html_output = html_output.replace("{{PAN_ZOOM_SCRIPT}}", pan_zoom_script_content)
+
+        train_widgets = self.build_train_widgets()
+        html_output = html_output.replace("{{TRAIN_WIDGETS}}", train_widgets)
+        html_output = html_output.replace("{{TRAIN_DATA}}", json.dumps(self.display_states, indent=4))
+
+        train_defs = ""
+        path_defs = ""
+        for train_id in self.env_data.trains.keys():
+            train_defs += f"const train_{train_id}_rotation = document.getElementById('train_{train_id}_rotation_group');\n"
+            train_defs += f"const train_{train_id}_animate = document.getElementById('train_{train_id}_animate');\n"
+            train_defs += f"const train_{train_id}_opacity_animation = document.getElementById('train_{train_id}_opacity_animation');\n"
+            path_defs  += f"const path_{train_id} = data[\"{train_id}\"];\n"
+            train_defs += f"const train_{train_id}_status = document.getElementById('train_{train_id}_status');\n"
+            train_defs += f"const train_{train_id}_action = document.getElementById('train_{train_id}_action');\n"
+            train_defs += f"const train_{train_id}_pos = document.getElementById('train_{train_id}_pos');\n"
+            # train_defs += f"const train_{train_id}_action_label = document.getElementById('train_{train_id}_action_label');\n"
+            # train_defs += f"const train_{train_id}_position_label = document.getElementById('train_{train_id}_position_label');\n"
+            # train_defs += f"const train_{train_id}_signal_group = document.getElementById('train_{train_id}_signal_group');\n"
+            
+        html_output = html_output.replace("{{TRAIN_DEFS}}", train_defs)
+        html_output = html_output.replace("{{PATH_DEFS}}", path_defs)
     
+        html_output = html_output.replace("{{MAX_STEP}}", str(self.time_frame))
+    
+        html_output = html_output.replace("{{MILLISECONDS_PER_STEP}}", str(milliseconds_per_step))
+
+        path_step_code = ""
+        for train_id in self.env_data.trains.keys():
+            path_step_code += f"  const state_{train_id} = path_{train_id}[step];\n"
+            path_step_code += f"  train_{train_id}_animate.setAttribute('dur', `${{ms_per_step}}ms`);\n"
+            path_step_code += f"  train_{train_id}_animate.setAttribute('keyPoints', `${{state_{train_id}.keyPoints}}`);\n"
+            path_step_code += f"  train_{train_id}_animate.setAttribute('path', `${{state_{train_id}.motionPath}}`);\n"
+            path_step_code += f"  train_{train_id}_animate.beginElement();\n"
+            # # debugging:
+            # path_step_code += f"  train_{train_id}_rotation.setAttribute('opacity', '1');\n"
+            # path_step_code += f"  train_{train_id}_opacity_animation.setAttribute('dur', '{milliseconds_per_step}ms');\n"
+            # set 'ms_per_step' to match the animation duration
+            path_step_code += f"  train_{train_id}_opacity_animation.setAttribute('dur', `${{ms_per_step}}ms`);\n"
+            # path_step_code += f"  train_{train_id}_opacity_animation.setAttribute('values', `${{state_{train_id}.opacity}}`);\n"
+            path_step_code += f"  train_{train_id}_opacity_animation.setAttribute('from', state_{train_id}.opacity[0]);\n"
+            path_step_code += f"  train_{train_id}_opacity_animation.setAttribute('to', state_{train_id}.opacity[1]);\n"
+            path_step_code += f"  train_{train_id}_status.textContent = `Status: ${{state_{train_id}.status}}`;\n"
+            path_step_code += f"  train_{train_id}_action.textContent = ` Action: ${{state_{train_id}.action}}`;\n"
+            path_step_code += f"  train_{train_id}_pos.textContent = ` Position: [${{state_{train_id}.position}}]`;\n"
+            # path_step_code += f"  train_{train_id}_action_label.textContent = `${{state_{train_id}.action}}`;\n"
+            # path_step_code += f"  train_{train_id}_position_label.textContent = `${{state_{train_id}.position}}`;\n"
+            # add signal logic: if "", add class "hide"; if "red" add class "red"; if "green" add class "green"
+            path_step_code += f"  train_{train_id}_signal_group.classList.remove('hide', 'red', 'green');\n"
+            path_step_code += f"  if (state_{train_id}.signal === 'red') {{\n"
+            path_step_code += f"    train_{train_id}_signal_group.classList.add('red');\n"
+            path_step_code += f"  }} else if (state_{train_id}.signal === 'green') {{\n"
+            path_step_code += f"    train_{train_id}_signal_group.classList.add('green');\n"
+            path_step_code += f"  }} else {{\n"
+            path_step_code += f"    train_{train_id}_signal_group.classList.add('hide');\n"
+            path_step_code += f"  }}\n"
+    
+        html_output = html_output.replace("{{PATH_STEP}}", path_step_code)
+
+        stop_animation_code = ""
+        for train_id in self.env_data.trains.keys():
+            stop_animation_code += f"  train_{train_id}_animate.endElement();\n"
+        html_output = html_output.replace("{{STOP_ANIMATION}}", stop_animation_code)
+    
+        slider_offset = self.get_abs_coord(1.5, grid_offset=False)
+        html_output = html_output.replace("{{SLIDER_OFFSET}}", str(slider_offset))
+    
+        return html_output
+
+    def build_train_widgets(self, train_widget_file=TRAIN_WIDGET_FILE):
+        with open(train_widget_file, "r") as f:
+            train_widget_template = f.read()
+        train_widgets = ""
+        for train_id in self.env_data.trains.keys():
+            widget = train_widget_template.replace("{{TRAIN_ID}}", str(train_id))
+            widget = widget.replace("{{SPEED}}", str(self.env_data.trains[train_id]['speed']))
+            train_widgets += widget
+        return train_widgets
+
+    def save_html(self, filename="visualization.html"):
+        html_content = self.build_html()
+        filename = self.base_dir / filename
+        with open(filename, "w") as f:
+            f.write(html_content)
+        logger.info(f"Visualization saved to {filename}")

@@ -2,26 +2,21 @@ from __future__ import annotations
 from .curves import CURVES, Point, CurveSegment, DIR_DICT, get_rotation, get_wait_path, ROTATION_OFFSETS
 import logging
 from dataclasses import dataclass
-import json
+from pathlib import Path
 
-# logger = logging.getLogger("TRAIN_PATHS")
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.INFO)
 
-# handler = logging.FileHandler("train_paths.log", mode="w")
-# formatter = logging.Formatter("%(levelname)s -- %(name)s: %(message)s")
-# handler.setFormatter(formatter)
-
-# logger.addHandler(handler)
-# logger.propagate = False
+LOG_DIR = Path("logs")
+LOG_DIR.mkdir(exist_ok=True)
 
 @dataclass
 class TrainState:
     """
-    TrainState represents holds all information about a train at a series of timesteps with same coordinates and status,
+    TrainState holds all information about a train at a series of timesteps with same coordinates and status,
     except for the action, which is handled by the Movement class.
-    During segment building, each TrainState is assigned incoming and outgoing CurveSegments (only oucoming for READY_TO_DEPART, only incoming for ARRIVED).
-    display_rotation is used for generating 'wait' paths when the train is stopped.
+    During segment building, each TrainState is assigned incoming and outgoing CurveSegments 
+    (only outcoming for READY_TO_DEPART, only incoming for ARRIVED).
+    `display_rotation` is used for generating 'wait' paths when the train is stopped.
     """
     timestep: int
     coords: Point
@@ -38,7 +33,8 @@ class Movement:
     Movement represents a train action ('move_forward', 'move_right', 'move_left') that 
     connects two TrainStates over a series of timesteps (depending on train speed).
     It holds the motion path and keypoints for animating the train movement between the two states.
-    No movement is created for 'wait' actions; their paths are generated directly from the TrainState, using `get_wait_path(state.display_rotation)`.
+    No movement is created for 'wait' actions; their paths are generated directly from the TrainState, 
+    using `get_wait_path(state.display_rotation)`.
     """
     def __init__(self, train_path: TrainPath, action: str, start: int, duration: int):
         self.train_path = train_path
@@ -90,7 +86,7 @@ class TrainPath:
     The main method is `get_display_states()`, which returns a dict of display states for each timestep,
     including action, status, position, motionPath, signal, opacity, and keyPoints.    
     """
-    def __init__(self, train_id: int, train_info: dict, time_frame: int, cell_size: int):
+    def __init__(self, train_id: int, train_info: dict, time_frame: int, cell_size: int, log_results=True):
         self.train_id = train_id
         self.speed = train_info['speed']
         self.train_info = train_info
@@ -106,14 +102,15 @@ class TrainPath:
         logger.debug(f"Initializing TrainPath for train {train_id} with time frame {time_frame}")
         self.build_states()
         self.build_segments()
-        # for debugging: write main states to file
-        with open(f"train_{train_id}_main_states.log", "w") as f:
-            for i, state in enumerate(self.states):
-                f.write(f"{i}: " + state.__str__() + "\n")
-        with open(f"train_{train_id}_movements.log", "w") as f:
-            f.write(self.timestep_movement_mapping.__str__() + "\n")
-            for i, action in enumerate(self.movements):
-                f.write(f"{i}: " + action.__str__() + "\n")
+        if log_results:
+            # for debugging: write main states to file
+            with open(LOG_DIR / f"train_{train_id}_main_states.log", "w") as f:
+                for i, state in enumerate(self.states):
+                    f.write(f"{i}: " + state.__str__() + "\n")
+            with open(LOG_DIR / f"train_{train_id}_movements.log", "w") as f:
+                f.write(self.timestep_movement_mapping.__str__() + "\n")
+                for i, action in enumerate(self.movements):
+                    f.write(f"{i}: " + action.__str__() + "\n")
         logger.debug(f"Finished initializing TrainPath for train {train_id}")
         
     def build_states(self):
