@@ -9,7 +9,7 @@ def create_dirs():
     """
     create directories for the various output file formats and return file_location
     """
-    file_types = ['lp/', 'pkl/', 'png/']
+    file_types = ['lp/', 'pkl/', 'png/', 'svg/']
 
     file_location = os.getcwd() + '/envs/'
     os.makedirs(file_location, exist_ok=True)

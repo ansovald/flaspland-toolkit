@@ -173,7 +173,11 @@ def create_output_dir() -> Path:
     while path.exists():
         number += 1
         path = Path("output") / f"{stamp}_{number}"
-    path.mkdir(parents=True)
+
+    # TODO: REMOVE LATER
+    # path = Path("output") / "debug"
+    # path.mkdir(parents=True)
+    path.mkdir(parents=True, exist_ok=True)
     return(path)
 
 
@@ -196,7 +200,7 @@ def main(argv=None) -> int:
         gif_renderer = GifRenderer(env=env, env_name=env_name)
         env_renderers.append(gif_renderer)
     if render_html:
-        html_renderer = HtmlRenderer(env=env, env_name=env_name)
+        html_renderer = HtmlRenderer(env=env, env_path=env_path, env_name=env_name)
         env_renderers.append(html_renderer)
 
     # create manager objects

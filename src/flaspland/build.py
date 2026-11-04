@@ -25,7 +25,7 @@ from pathlib import Path
 
 # custom modules
 from .modules.dirs import create_dirs, find_start
-from .modules.save import save_lp, save_png, save_pkl
+from .modules.save import save_lp, save_png, save_pkl, save_svg
 from .modules.convert import convert_to_clingo
 
 # Flatland modules
@@ -327,6 +327,7 @@ def main(argv: list[str] | None = None) -> int:
             save_lp(convert_to_clingo(env), file_name, path)
             save_png(env, file_name, path)
             save_pkl(env, file_name, path)
+            save_svg(env, file_name, path)
         except Exception as exc:  # keep going so one bad env doesn't kill a batch
             failures += 1
             print(f"[{file_name}] failed (seed={seed}): {exc}", file=sys.stderr)

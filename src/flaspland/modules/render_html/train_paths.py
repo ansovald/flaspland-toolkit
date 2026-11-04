@@ -111,6 +111,9 @@ class TrainPath:
                 f.write(self.timestep_movement_mapping.__str__() + "\n")
                 for i, action in enumerate(self.movements):
                     f.write(f"{i}: " + action.__str__() + "\n")
+            with open(LOG_DIR / f"train_{train_id}_timestep_state_mapping.log", "w") as f:
+                for timestep, state_index in self.timestep_state_mapping.items():
+                    f.write(f"{timestep}: {state_index}\n")
         logger.debug(f"Finished initializing TrainPath for train {train_id}")
         
     def build_states(self):
@@ -135,7 +138,7 @@ class TrainPath:
                 self.states.append(current_state)
                 self.timestep_state_mapping[timestep] = len(self.states) - 1
                 logger.debug(f"Adding READY_TO_DEPART state for train {self.train_id} at timestep {timestep}:\n{current_state}")
-            elif coords and coords.x and coords.y:
+            elif coords and coords.x is not None and coords.y is not None:
                 if not last_coords:
                     self.initial_state = current_state
                     self.states.append(current_state)
@@ -151,6 +154,7 @@ class TrainPath:
                     last_state = current_state
                     logger.debug(f"Adding new state for train {self.train_id} at timestep {timestep}:\n{current_state}")
                 self.timestep_state_mapping[timestep] = len(self.states) - 1
+                logger.debug(f"Processed state for train {self.train_id} at timestep {timestep}:\n{current_state}\nmapping {self.timestep_state_mapping[timestep]}")
 
                 if timestep not in self.timestep_movement_mapping:
                     action = self.action_at(timestep)

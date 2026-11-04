@@ -6,7 +6,7 @@ from PIL import Image, ImageDraw, ImageFont
 from pathlib import Path
 import tempfile
 
-from .render_html import LandscapeBuilder, EnvData
+from .render_html import LandscapeBuilder, get_train_data, Landscape, Animation
 from .defs import DIR_MAP, ACTION_MAP
 
 import json
@@ -15,7 +15,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 class Renderer():
-    def __init__(self, env, env_name):
+    def __init__(self, env, env_name, *args, **kwargs):
         self.env = env
         self.env_name = env_name
         logger.info(f"Initializing Renderer for environment {env_name}")
@@ -78,45 +78,45 @@ class GifRenderer(Renderer):
         imageio.mimsave(output_file, self.images, format='GIF', loop=loop, duration=duration)
         logger.info(f"GIF saved to {output_file}")
 
-
-def get_position_and_direction(agent):
-    """ get an agent's position and direction; position is None while the agent is off the map """
-    if agent.current_configuration is not None:
-        return (agent.current_configuration)
-    # off the map: use the arrival direction if done, otherwise the starting direction
-    if agent.target_configuration is not None:
-        return (None, agent.target_configuration[1])
-    return (None, agent.initial_configuration[1])
-
 class HtmlRenderer(Renderer):
-    def __init__(self, env, env_name, cell_size=25, milliseconds_per_step=500):
+    def __init__(self, env, env_path, env_name, cell_size=25, milliseconds_per_step=500):
         logger.info("Initializing HtmlRenderer")
         super().__init__(env, env_name)
-        # self.train_info = train_info(env)
-        self.time_frame = 0
+        # in env_path, replace 'pkl' with 'svg' to get the landscape file
+        env_path = Path(*("svg" if part == "pkl" else part for part in Path(env_path).parts))
+        if env_path.suffix == ".pkl":
+            env_path = env_path.with_suffix(".svg")
+        
         self.cell_size = cell_size
         self.milliseconds_per_step = milliseconds_per_step
-        self.env_data = EnvData(env, env_name)
+
+        landscape = Landscape.from_svg(env_path)
+        self.landscape = landscape
+
+        self.train_data = get_train_data(env)
+        self.timeframe = 0
 
     def render_frame(self, timestep, actions):
         for a in actions[timestep]:
             (x, y), direction = get_position_and_direction(self.env.agents[a])
-            self.env_data.trains[a]["path"][timestep] = {
+            self.train_data[a]["path"][timestep] = {
                 "position": {"x": x, "y": y},
                 "direction": direction,
                 "status": self.env.agents[a].state.name,
                 "action": ACTION_MAP[actions[timestep][a]]
             }
-        self.time_frame = timestep
+        self.timeframe = timestep
 
     def save(self, output_dir, *args, **kwargs):
         output_file = output_dir / "train_info.json"
         with open(output_file, "w") as f:
-            json.dump(self.env_data.trains, f, indent=4)
+            json.dump(self.train_data, f, indent=4)
         logger.info(f"Train info saved to {output_file}")
 
-        landscape = LandscapeBuilder(output_dir, env_data=self.env_data, time_frame=self.time_frame, cell_size=self.cell_size)
-        landscape.save_html()
+        self.landscape.save_svg(output_dir / "landscape.svg")
+        animation = Animation(landscape=self.landscape, train_data=self.train_data, timeframe=self.timeframe, env_name=self.env_name)
+        animation.prepare()
+        animation.save_html(output_dir / "visualization.html")
 
 
 def get_position_and_direction(agent):

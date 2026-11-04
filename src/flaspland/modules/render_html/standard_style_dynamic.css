@@ -7,7 +7,6 @@
 }
 
 :root {
-  --background: #f0f0f0;
   --color: #333333;
   --background_1: #e0f7e9;
   --color_1: #222222;
@@ -128,10 +127,6 @@ h2 {
 }
 
 {{TRAIN_INFO_STYLE}}
-
-.background{fill:var(--background)}
-
-{{TRAIN_FILL_COLORS}}
 
 .train:hover .train_background {
   stroke-opacity:1;
