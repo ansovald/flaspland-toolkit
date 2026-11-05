@@ -1,22 +1,28 @@
 
+.train-fill-TRAIN_ID{ fill: var(--train-TRAIN_ID-color); }
+.train_TRAIN_ID_background { background-color: var(--train-TRAIN_ID-color); }
+.train_TRAIN_ID_rect { 
+  stroke: var(--train-TRAIN_ID-color);
+}
+.train_TRAIN_ID_path {
+  stroke: var(--train-TRAIN_ID-color);
+}
+
 body:has(#train_TRAIN_ID_info:hover) #train_TRAIN_ID_path {
   stroke-width: HOVER_WIDTH;
   opacity: 1.0;
   transition: 0.2s;
 }
-
 body:has(#train_TRAIN_ID_main:hover) #train_TRAIN_ID_info {
   opacity: 1.0;
   transition: 0.2s;
 }
-
 svg:has(#train_TRAIN_ID_main:hover) #train_TRAIN_ID_path {
    stroke-width: HOVER_WIDTH;
    opacity: 1.0;
    transition: 0.2s;
- }
-
- body:has(#train_TRAIN_ID_info:hover) #train_TRAIN_ID_background {
+}
+body:has(#train_TRAIN_ID_info:hover) #train_TRAIN_ID_rect {
   stroke-opacity: 1.0;
   transition: 0.2s;
 }

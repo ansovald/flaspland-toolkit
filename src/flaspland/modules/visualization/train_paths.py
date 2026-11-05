@@ -1,5 +1,5 @@
 from __future__ import annotations
-from .curves import CURVES, Point, CurveSegment, DIR_DICT, get_rotation, get_wait_path, ROTATION_OFFSETS
+from .curves import CURVES, Point, CurveSegment, DIR_TO_ROT, get_rotation, ROTATION_OFFSETS
 import logging
 from dataclasses import dataclass
 from pathlib import Path
@@ -28,6 +28,20 @@ class TrainState:
     incoming_segment: CurveSegment = None
     outgoing_segment: CurveSegment = None
 
+    def get_wait_path(self, cell_size) -> CurveSegment:
+        center_offset = Point(0,0)
+        if self.center_offset is not None:
+            center_offset = self.center_offset
+        offset = ROTATION_OFFSETS[self.display_rotation] * 0.0001
+        start = Point(0.5, 0.5) + center_offset
+        end = start + offset
+        wait_segment = CurveSegment(
+            start=start,
+            end=end
+        ).translate(self.coords)
+        wait_path = wait_segment.standalone_path(cell_size)
+        return wait_path
+
 class Movement:
     """
     Movement represents a train action ('move_forward', 'move_right', 'move_left') that 
@@ -43,7 +57,6 @@ class Movement:
         self.duration = duration
         self.from_state = None
         self.to_state = None
-        self.keypoints: list[float] = [0.0, 1.0]
         self.keypoints = self.calculate_keypoints()
         self.motion_path = ""
 
@@ -81,7 +94,8 @@ class Movement:
 class TrainPath:
     """
     TrainPath is the main class for building the display states and motion paths for a single train.
-    It is initialized with the train_id, train_info (dict passed by the environment), time_frame (total timesteps), and cell_size (for SVG scaling).
+    It is initialized with the train_id, train_info (dict passed by the environment), 
+    time_frame (total timesteps), and cell_size (for SVG scaling).
     When initialized, it builds the main TrainStates and Movements for the train.
     The main method is `get_display_states()`, which returns a dict of display states for each timestep,
     including action, status, position, motionPath, signal, opacity, and keyPoints.    
@@ -119,7 +133,8 @@ class TrainPath:
     def build_states(self):
         """
         Build the main TrainStates for the train by parsing the train_info path.
-        Adds 'ARRIVED' state, since the last coordinate is not tracked by the toolkit, and then fills in 'PARKED' state until time_frame.
+        Adds 'ARRIVED' state when the train reaches its destination (not automatically provided by the toolkit), 
+        and then fills in 'PARKED' state until time_frame.
         Consecutive timesteps with same coordinates and status are merged into a single TrainState with duration.
         Also builds the list of Movements for non-wait actions, linking them to the TrainStates.
         """
@@ -138,7 +153,7 @@ class TrainPath:
                 self.states.append(current_state)
                 self.timestep_state_mapping[timestep] = len(self.states) - 1
                 logger.debug(f"Adding READY_TO_DEPART state for train {self.train_id} at timestep {timestep}:\n{current_state}")
-            elif coords and coords.x is not None and coords.y is not None:
+            elif coords and not coords.is_none():
                 if not last_coords:
                     self.initial_state = current_state
                     self.states.append(current_state)
@@ -167,8 +182,9 @@ class TrainPath:
             timestep += 1
         last_timestep = self.states[-1].timestep + self.states[-1].duration
         dest_coords = Point.from_dict(self.train_info['end']['position'])
-        distance = abs(dest_coords.x - self.states[-1].coords.x) + abs(dest_coords.y - self.states[-1].coords.y)
-        if distance == 1:
+        # distance_to_destination = abs(dest_coords.x - self.states[-1].coords.x) + abs(dest_coords.y - self.states[-1].coords.y)
+        distance_to_destination = self.states[-1].coords.distance_to(dest_coords)
+        if distance_to_destination == 1:
             last_coords = dest_coords
             status = "ARRIVED"
             logger.debug(f"Adjusting last coordinates for train {self.train_id} to destination coords: {dest_coords}")
@@ -183,6 +199,7 @@ class TrainPath:
             status = status,
             rotation = get_rotation(self.states[-1].coords, last_coords)
         )
+        logger.debug(f"Created arrival state for train {self.train_id}:\n{arrival_state}")
         self.arrival_state = arrival_state
         self.states.append(arrival_state)
         logger.debug(f"Adding ARRIVED state for train {self.train_id} at timestep {last_timestep}:\n{arrival_state}")
@@ -235,13 +252,13 @@ class TrainPath:
                 logger.debug(f"waiting state for train {self.train_id}, skipping segment building")
                 continue
             elif status in ["ARRIVED", "NOT_ARRIVED"]:
-                logger.debug(f"arrival state for train {self.train_id}, building incoming segment only")
                 curve = CURVES[(rotation, rotation)]
                 incoming = curve['incoming'].translate(coords)
                 self.states[i].display_rotation = rotation
                 self.states[i].center_offset = curve['mid']
                 self.states[i].incoming_segment = incoming
                 self.path_string += incoming.segment_path(self.cell_size)
+                logger.debug(f"Updated arrival state for train {self.train_id} at index {i}:\n{self.states[i]}")
                 # we don't need to build any more segments after arrival
                 break
             else:
@@ -267,11 +284,11 @@ class TrainPath:
                 logger.debug(f"Built segments for train {self.train_id} at state index {i}:\nIncoming: {incoming}\nOutgoing: {outgoing}")
             logger.debug(f"i={i}, {self.states[i]}")
 
-    def get_motion_info(self, timestep) -> str:
+    def get_motion_info(self, timestep) -> tuple[str, list[float]]:
         """
         Returns the motion path and animation keypoints for the train at the given timestep.
         """
-        timestep = timestep - 1 # motion only starts one timestep after action is initiated
+        timestep = timestep - 1 # motion only starts one timestep AFTER action is initiated
         movement_idx = self.timestep_movement_mapping.get(timestep, None)
         # if there is no movement for this timestep, return wait path for current state
         if movement_idx is None:
@@ -279,19 +296,18 @@ class TrainPath:
             if state_idx is None:
                 # no entry for this timestep, default to initial wait path
                 state = self.initial_state
-                return get_wait_path(state.display_rotation, state.center_offset).translate(state.coords).standalone_path(self.cell_size), [0.0, 1.0]
+                return state.get_wait_path(self.cell_size), [0.0, 1.0]
             else:
                 state = self.states[state_idx]
                 if state.status == "READY_TO_DEPART":
                     # state = self.states[state_idx + 1]
                     state = self.initial_state
-                    return get_wait_path(state.display_rotation, state.center_offset).translate(state.coords).standalone_path(self.cell_size), [0.0, 1.0]
+                    return state.get_wait_path(self.cell_size), [0.0, 1.0]
                 elif state.status in ["ARRIVED", "NOT_ARRIVED"] and state.coords is None:
-                    state = self.arrival_state
-                    return get_wait_path(state.display_rotation, state.center_offset).translate(state.coords).standalone_path(self.cell_size), [0.0, 1.0]
+                    return self.arrival_state.get_wait_path(self.cell_size), [0.0, 1.0]
                 logger.debug(f"No movement found for train {self.train_id} at timestep {timestep}, defaulting to wait path for state index {state_idx}")
                 state = self.states[state_idx]
-                return get_wait_path(state.display_rotation, state.center_offset).translate(state.coords).standalone_path(self.cell_size), [0.0, 1.0]
+                return state.get_wait_path(self.cell_size), [0.0, 1.0]
         movement = self.movements[movement_idx]
         movement.set_states()
         return movement.get_motion_info(self.cell_size, timestep)
@@ -314,43 +330,37 @@ class TrainPath:
             # no entry for this timestep, default to initial wait path
             status = "PARKED"
         motion_path, keypoints = self.get_motion_info(timestep)
-        opacity = [1.0, 1.0]
+        opacity = 1.0
         if status == "PARKED":
-            opacity = [0.0, 0.0]
+            opacity = 0.0
         elif status in ["ARRIVED", "NOT_ARRIVED"]:
-            if state.coords is None:
-                opacity = [0.0, 0.0]
+            if not state.coords or state.coords.is_none():
+                opacity = 0.0
             else:
-                opacity = [1.0, 0.0]
+                opacity = .8
         elif status == "READY_TO_DEPART":
-            opacity = [0.0, 1.0]
+            opacity = .8
         action = self.action_at(timestep)
-        position = self.coords_at(timestep)
-        action = self.action_at(timestep)
+        if state:
+            position = state.coords
+        else:
+            position = self.coords_at(timestep)
         # when moving, signal is not displayed
         signal = None
         if action == "wait":
             # when waiting, signal is red if the train waits at the next timestep, too
             signal = "red"
-            # if self.action_at(timestep + 1) != "wait":
-            #     # otherwise, signal is green
-            #     signal = "green"
         else:
             if self.action_at(timestep - 1) == "wait":
                 signal = "green"
-            # if self.action_at(timestep + 1) == "wait":
-            #     signal = "red"
         return {
             "action": action,
             "status": status,
-            "position": f"{position.x},{position.y}" if position else None,
+            "position": f"{int(position.x)},{int(position.y)}" if position and not position.is_none() else "n/a",
             "motionPath": motion_path,
             "signal": signal,
-            # TODO: make opacity fade in/out
             "opacity": opacity,
             "keyPoints": f"{keypoints[0]};{keypoints[1]}",
-            # "keyPoints": f"0;1",
-            # "keyTimes": "0;1"
         }
     
     def get_display_states(self) -> dict[int, dict]:
@@ -398,7 +408,7 @@ class TrainPath:
             step_dict = self.train_info['path'][timestep]
             return step_dict.get('action', None)
         else:
-            return None
+            return 'wait'
         
     def status_at(self, timestep: int) -> str:
         """
@@ -416,7 +426,7 @@ class TrainPath:
         and converts it to rotation in degrees.
         """
         if timestep in self.train_info['path']:
-            rotation = DIR_DICT.get(self.train_info['path'][timestep]['direction'], None)
+            rotation = DIR_TO_ROT.get(self.train_info['path'][timestep]['direction'], None)
             return rotation
         else:
             return None

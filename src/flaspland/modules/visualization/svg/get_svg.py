@@ -1,9 +1,11 @@
-from pydreamplet import G, Vector, Path, Circle
+from pydreamplet import G, Vector, Path, Circle, Rect
 import xml.etree.ElementTree as ET
-import random
 from pathlib import Path as FilePath
 
 SVG_DIR = FilePath(__file__).resolve().parent
+
+svg_style_path = SVG_DIR / "svg_styles.css"
+SVG_STYLE = svg_style_path.read_text()
 
 train_colors = ["#d50000", "#2979ff", "#ff6f00", "#fdd835", "#00c853", "#aa00ff", "#00bfa5", "#c51162", "#64dd17", "#304ffe", "#ffd600", "#00b8d4", "#9e9e9e", "#ff1744", "#00e676", "#6200ea", "#2962ff", "#aeea00", "#f50057", "#00b0ff"]
 
@@ -38,6 +40,52 @@ def get_train_svg(train_id, cell_size=25, scale=240):
     train_group.id = f"train_{train_id}_group"
     train_group.append(make_signal_group(train_id))
     return train_group
+
+def make_train_group(train_id, cell_size=25, scale=240):
+    # container to hold all elements of the train for easy highlighting
+    train_group = G(id=f"train_{train_id}_main", 
+                    class_name="train",
+                    opacity="1")
+    
+    train_render_group = get_train_svg(train_id, cell_size, scale)
+    train_rotation_group = G(id=f"train_{train_id}_rotation_group", class_name="train_rotation")
+
+    background_rect = Rect(
+        pos=Vector(0, 0),
+        rx=cell_size/5, ry=cell_size/5,
+        width=cell_size,
+        height=cell_size,
+        id=f"train_{train_id}_rect",
+        class_name=f"train_background train_rect train_{train_id}_rect"
+    )
+    train_rotation_group.append(background_rect)
+    train_rotation_group.append(train_render_group)
+    train_rotation_group.pos = Vector(-cell_size/2, -cell_size/2)
+    train_rotation_group.__setattr__("transform-origin", "center")
+    train_rotation_group.angle = 90
+
+    transformed_train_group = G(id=f"train_{train_id}_transformed_group", class_name="train_transformed")
+    transformed_train_group.append(train_rotation_group)
+
+    train_animation_group = G(id=f"train_{train_id}_animation_group", class_name="train_animation")
+    path_animation = ET.Element("animateMotion", {
+        "id": f"train_{train_id}_animate",
+        "dur": "1s",    # to be set in JavaScript
+        "path": "", # to be set in JavaScript
+        "repeatCount": "1", # set to `indefinite` for debugging
+        "fill": "freeze",
+        "rotate": "auto",
+        "keyPoints": "0;1",
+        "keyTimes": "0;1",
+        "calcMode": "linear"
+    })
+    train_animation_group.append(path_animation)
+    train_animation_group.append(transformed_train_group)
+
+    train_group.append(train_animation_group)
+
+    return train_group
+
 
 def clean_svg_group(svg_file, group_id, cell_size=25, scale=240, class_name=None):
     """

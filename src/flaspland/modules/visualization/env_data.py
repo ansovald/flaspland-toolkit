@@ -3,8 +3,7 @@ from ..defs import DIR_MAP
 import numpy as np
 import logging
 from dataclasses import dataclass
-from .svg_files import SVG_REGISTRY, TRACKS_FILES
-from pathlib import Path
+from .svg import SVG_REGISTRY, TRACKS_FILES
 
 logger = logging.getLogger(__name__)
 

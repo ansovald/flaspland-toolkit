@@ -2,7 +2,7 @@
 
 from flatland.utils.rendertools import RenderTool, AgentRenderVariant
 import pickle
-from .render_html import Landscape, EnvData
+from .visualization import Landscape, EnvData
 from pathlib import Path
 
 def save_lp(env, file_name, file_location):
@@ -34,6 +34,6 @@ def save_pkl(env, file_name, file_location):
     pickle.dump(env, open(f"{file_location}pkl/{file_name}.pkl", "wb"))
 
 def save_svg(env, file_name: str, file_location: Path | str):
-    env_data = EnvData(env, file_name)
+    env_data = EnvData(env, env_name=file_name)
     landscape = Landscape.from_env_data(env_data=env_data, cell_size=25)
     landscape.save_svg(Path(file_location) / "svg" / f"{file_name}.svg")

@@ -6,7 +6,7 @@ from PIL import Image, ImageDraw, ImageFont
 from pathlib import Path
 import tempfile
 
-from .render_html import LandscapeBuilder, get_train_data, Landscape, Animation
+from .visualization import get_train_data, Landscape, Animation, EnvData
 from .defs import DIR_MAP, ACTION_MAP
 
 import json
@@ -79,19 +79,28 @@ class GifRenderer(Renderer):
         logger.info(f"GIF saved to {output_file}")
 
 class HtmlRenderer(Renderer):
-    def __init__(self, env, env_path, env_name, cell_size=25, milliseconds_per_step=500):
+    def __init__(self, env, env_path, env_name, cell_size=25, milliseconds_per_step=400):
         logger.info("Initializing HtmlRenderer")
         super().__init__(env, env_name)
-        # in env_path, replace 'pkl' with 'svg' to get the landscape file
-        env_path = Path(*("svg" if part == "pkl" else part for part in Path(env_path).parts))
-        if env_path.suffix == ".pkl":
-            env_path = env_path.with_suffix(".svg")
         
-        self.cell_size = cell_size
         self.milliseconds_per_step = milliseconds_per_step
 
-        landscape = Landscape.from_svg(env_path)
-        self.landscape = landscape
+        svg_path = Path(*("svg" if part == "pkl" else part for part in Path(env_path).parts))
+        if svg_path.suffix == ".pkl":
+            svg_path = svg_path.with_suffix(".svg")
+        try:
+            # Check if there is already an SVG version of the landscape corresponding to the environment path
+            landscape = Landscape.from_svg(svg_path)
+            self.landscape = landscape
+        except Exception as e:
+            logger.info(f"Failed to load landscape from {svg_path}: {e}")
+            env_name = env_path.stem
+            env_data = EnvData(env, env_name)
+            landscape = Landscape.from_env_data(env_data=env_data, cell_size=cell_size)
+            svg_path.parent.mkdir(parents=True, exist_ok=True)
+            landscape.save_svg(svg_path)
+            logger.info(f"Landscape created and saved to {svg_path}")
+            self.landscape = landscape
 
         self.train_data = get_train_data(env)
         self.timeframe = 0
@@ -113,10 +122,8 @@ class HtmlRenderer(Renderer):
             json.dump(self.train_data, f, indent=4)
         logger.info(f"Train info saved to {output_file}")
 
-        self.landscape.save_svg(output_dir / "landscape.svg")
         animation = Animation(landscape=self.landscape, train_data=self.train_data, timeframe=self.timeframe, env_name=self.env_name)
-        animation.prepare()
-        animation.save_html(output_dir / "visualization.html")
+        animation.save_html(output_dir / "visualization.html", milliseconds_per_step=self.milliseconds_per_step)
 
 
 def get_position_and_direction(agent):

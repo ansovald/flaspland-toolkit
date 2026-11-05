@@ -1,4 +1,4 @@
-from pydreamplet import SVG, Rect, Path, Vector, G
+from pydreamplet import SVG, Rect, Path, Vector, G, Circle, Text
 import xml.etree.ElementTree as ET
 
 play_button = """<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" class="fill-button">
@@ -45,3 +45,72 @@ def build_buttons(cell_size: int = 24) -> G:
         button_group.pos = Vector(cell_size * index, 0)
         control_group.append(button_group)
     return control_group
+
+def build_animation_controls(control_cell_size, control_width=1000):
+    control_height = 2 * control_cell_size
+    control_canvas = SVG(control_width, control_height)
+
+    buttons_x = control_width - 7 * control_cell_size
+    buttons_y = control_cell_size
+    controls_group = build_buttons(control_cell_size)
+    controls_group.pos = Vector(
+        buttons_x,
+        buttons_y
+    )
+    control_canvas.append(controls_group)
+
+    slider_group = G(id="slider_group", class_name="slider")
+    control_canvas.append(slider_group)
+
+    slider_x = control_cell_size
+    slider_y = buttons_y
+    slider_width = buttons_x - 2 * control_cell_size
+    # make invisible rect behind slider for calculating time steps
+    slider_background = Rect(
+        pos=Vector(slider_x, slider_y),
+        width=slider_width,
+        height=control_cell_size,
+        fill="#000000",
+        fill_opacity=0.0,
+        id="slider_background",
+        class_name="slider_background"
+    )
+    slider_group.append(slider_background)
+
+    # make a path from .5 to self.buttons_x - 1 on height control_y + .5 for time step slider
+    slider_path = Path(
+        class_name="slider-path",
+        d=f"M {slider_x},{slider_y + .5 * control_cell_size} L {slider_x + slider_width},{slider_y + .5 * control_cell_size}",
+        stroke_width=control_cell_size * 0.5,
+        stroke_linecap="round",
+        fill="none",
+        id="time_step_slider_path"
+    )
+    slider_group.append(slider_path)
+
+    slider_handle = Circle(
+        cx=slider_x + 0.5 * control_cell_size, 
+        cy=slider_y + .5 * control_cell_size, r=control_cell_size*.4, 
+        stroke_width=control_cell_size * 0.1, 
+        id="slider_handle", 
+        class_name="slider-handle")
+    slider_group.append(slider_handle)
+
+    step_group = G(id="step_legend", class_name="step_legend")
+    step_group.pos = Vector(
+        slider_x + slider_width / 2,
+        slider_y - 0.5 * control_cell_size
+    )
+    step_label = Text(
+        initial_text="Time Step: 0",
+        class_name="footer-svg-foreground",
+        font_family="monospace",
+        font_size=control_cell_size * 0.7,
+        font_weight=700,
+        dominant_baseline="central",
+        text_anchor="middle",
+        id="step_label"
+        )
+    step_group.append(step_label)
+    slider_group.append(step_group)
+    return control_canvas

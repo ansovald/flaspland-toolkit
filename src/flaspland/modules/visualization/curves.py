@@ -14,14 +14,14 @@ used to calculate the exact movements nevessary for the train to smoothly move a
 LEFT_MARGIN = 1  # in cells
 TOP_MARGIN = 1   # in cells
 
-DIR_DICT = {
+DIR_TO_ROT = {
     "n": 0,
     "e": 90,
     "s": 180,
     "w": 270
 }
 
-ROT_DICT = { v: k for k, v in DIR_DICT.items() }
+ROT_TO_DIR = { v: k for k, v in DIR_TO_ROT.items() }
 
 def get_direction(coords: Point, next_coords: Point) -> str:
         x_offset = next_coords.x - coords.x
@@ -45,7 +45,7 @@ def get_rotation(coords: Point, next_coords: Point) -> int:
     corresponding to the direction from coords to next_coords.
     """
     direction = get_direction(coords, next_coords)
-    return DIR_DICT.get(direction, None)
+    return DIR_TO_ROT.get(direction, None)
 
 @dataclass
 class Point:
@@ -74,6 +74,16 @@ class Point:
     
     def __dict__(self):
         return {"x": self.x, "y": self.y}
+
+    # define equality
+    def __eq__(self, other: Point) -> bool:
+        if not isinstance(other, Point):
+            return False
+        return self.x == other.x and self.y == other.y
+
+    # define when Point is considered None
+    def is_none(self) -> bool:
+        return self.x is None or self.y is None
     
     def make_abs(self, cell_size, grid_offset=True) -> Point:
         offset = 1 if grid_offset else 0
@@ -93,7 +103,18 @@ class Point:
     def from_dict(point_dict: dict) -> Point:
         if point_dict is None:
             return None
-        return Point(point_dict.get("x", None), point_dict.get("y", None))
+        x = point_dict.get("x", None)
+        y = point_dict.get("y", None)
+        if x:
+            x = float(x)
+        if y:
+            y = float(y)
+        return Point(x, y)
+
+    def distance_to(self, other: Point) -> float:
+        if not other:
+            return float('inf')
+        return ((self.x - other.x) ** 2 + (self.y - other.y) ** 2) ** 0.5
 
 # ROTATION_OFFSETS are needed to generate wait paths for trains
 # specifically in curves. They define a small offset in the direction of the train's rotation.
@@ -107,20 +128,6 @@ ROTATION_OFFSETS = {
     270: Point(-1, 0),
     315: Point(-1, -1)
 }
-
-def get_wait_path(rotation: int, center_offset: Point=None) -> CurveSegment:
-    """
-    Looks up the small wait path offset for the given rotation, and returns a CurveSegment representing the wait path.
-    """
-    if center_offset is None:
-        center_offset = Point(0,0)
-    offset = ROTATION_OFFSETS[rotation] * 0.0001
-    start = Point(0.5, 0.5) + center_offset
-    end = start + offset
-    return CurveSegment(
-        start=start,
-        end=end
-    )
 
 @dataclass
 class CurveSegment:

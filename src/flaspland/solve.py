@@ -174,9 +174,6 @@ def create_output_dir() -> Path:
         number += 1
         path = Path("output") / f"{stamp}_{number}"
 
-    # TODO: REMOVE LATER
-    # path = Path("output") / "debug"
-    # path.mkdir(parents=True)
     path.mkdir(parents=True, exist_ok=True)
     return(path)
 
@@ -218,6 +215,10 @@ def main(argv=None) -> int:
             position, direction = get_position_and_direction(env.agents[a])
             log.add(f'{a};{timestep};{position};{DIR_MAP[direction]};{STATE_MAP[env.agents[a].state]};{ACTION_MAP[actions[timestep][a]]}\n')
 
+        if env_renderers:
+            for renderer in env_renderers:
+                renderer.render_frame(timestep=timestep, actions=actions)
+
         _, _, done, info = env.step(actions[timestep])
 
         # end if simulation is finished
@@ -233,10 +234,6 @@ def main(argv=None) -> int:
             actions = sim.update_actions(context)
 
         mal.deduct() #??? where in the loop should this go - before context?
-
-        if env_renderers:
-            for renderer in env_renderers:
-                renderer.render_frame(timestep=timestep, actions=actions)
 
         timestep = timestep + 1
 

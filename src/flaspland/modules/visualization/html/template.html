@@ -6,30 +6,30 @@
 </head>
 <body>
 <style>
-{{STANDARD_CSS}}
+STANDARD_STYLE
 </style>
 
 <div class="header">
-  <h2>{{HEADING}}</h2>
+  <h2>HEADING</h2>
 </div>
 
 <div class="content">
   <div id="svg_container" class="svg_container">
     <svg id="svg_canvas" class="svg_canvas" xmlns="http://www.w3.org/2000/svg" style="overflow: hidden;" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:ev="http://www.w3.org/2001/xml-events">
       <!-- SVG -->
-      {{INLINE_SVG}}
+      INLINE_SVG
     </svg>
   </div>
   <div class="train_widgets">
-    {{TRAIN_WIDGETS}}
+    TRAIN_WIDGETS
   </div>
 </div>
 
 <div class="footer">
-{{CONTROL_SVG}}
+CONTROL_SVG
 <div id="ms_per_step_control" class="settings_widget">
   <div><i>ms</i> per step:</div>
-  <input type="number" id="ms_per_step_input" value="{{MILLISECONDS_PER_STEP}}" min="10" max="10000" step="50">
+  <input type="number" id="ms_per_step_input" value="MILLISECONDS_PER_STEP" min="10" max="10000" step="20">
 </div>
 </div>
 
@@ -37,13 +37,15 @@
 /* =======================
    TRAIN LOCATION DATA
    ======================= */
-const data = {{TRAIN_DATA}};
+const data = TRAIN_DATA;
 
 
 /* =======================
    PAN/ZOOM SETUP
    ======================= */
-{{PAN_ZOOM_SCRIPT}}
+
+PAN_ZOOM_SCRIPT
+
 var panZoomCanvas = svgPanZoom('#svg_canvas', {
   zoomEnabled: true,
   zoomScaleSensitivity: 0.1,
@@ -57,7 +59,9 @@ var panZoomCanvas = svgPanZoom('#svg_canvas', {
 /* =======================
    SETUP
    ======================= */
-{{TRAIN_DEFS}}
+
+TRAIN_DEFS
+
 const stepLabel = document.getElementById("step_label");
 
 const playButton = document.getElementById("play_button");
@@ -71,8 +75,8 @@ const sliderHandle = document.getElementById("slider_handle");
 const sliderBackground = document.getElementById("slider_background");
 const sliderRect = sliderBackground.getBoundingClientRect();
 const sliderWidth = sliderRect.width;
-const sliderOffset = {{SLIDER_OFFSET}};
-let ms_per_step = {{MILLISECONDS_PER_STEP}};
+const sliderOffset = SLIDER_OFFSET;
+let ms_per_step = MILLISECONDS_PER_STEP;
 
 const msPerStepInput = document.getElementById("ms_per_step_input");
 msPerStepInput.onchange = e => {
@@ -88,8 +92,7 @@ msPerStepInput.onchange = e => {
 };
 
 // Extract and sort steps
-{{PATH_DEFS}}
-const MAX_STEP = {{MAX_STEP}};
+const MAX_STEP = MAX_STEP_PLACEHOLDER;
 const steps = Array.from({length: MAX_STEP + 1}, (_, i) => i);
 
 /* =======================
@@ -101,7 +104,7 @@ let timer = null;
 
 function renderStep(step) {
   stepLabel.textContent = `Time Step: ${step}`;
-{{PATH_STEP}}
+PATH_STEP
   const percent = step / MAX_STEP;
   const handleX = sliderRect.left + percent * sliderRect.width;
   // console.log(`step: ${step}, max: ${MAX_STEP}, percent: ${percent}, handleX: ${handleX}, slider width: ${sliderRect.width}`);
@@ -114,6 +117,10 @@ function renderStep(step) {
 function play() {
   if (playing) return;
   playing = true;
+
+  if (currentStep >= MAX_STEP) {
+    currentStep = 0;
+  }
 
   playButton.classList.add("active");
   pauseButton.classList.remove("active");
@@ -151,7 +158,7 @@ function goBackward() {
   pause();
   currentStep = Math.max(0, currentStep - 1);
   renderStep(currentStep);
-{{STOP_ANIMATION}}
+STOP_ANIMATION
 }
 function goForward() {
   pause();

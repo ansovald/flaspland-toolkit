@@ -12,6 +12,7 @@
   --color_1: #222222;
   --light_control_primary: #c7c7c7;
   --light_control_secondary: #6c6c6c;
+/* TRAIN_COLORS */
 }
 
 html, body {
@@ -126,7 +127,21 @@ h2 {
   font-weight: bold;
 }
 
-{{TRAIN_INFO_STYLE}}
+.train_rect {
+  stroke-opacity: 0.0;
+  stroke-width: RECT_STROKE_WIDTH;
+  fill: None; 
+}
+
+.train_path {
+  stroke-width: TRAIN_PATH_WIDTH;
+  stroke-dasharray: TRAIN_PATH_DASHARRAY;
+  stroke-linecap: round;
+  fill: none;
+  opacity: 1.0;
+}
+
+/* TRAIN_STYLES */
 
 .train:hover .train_background {
   stroke-opacity:1;
@@ -150,9 +165,6 @@ h2 {
 .train_signal.green .green_light {
   opacity: 1;
 }
-
-{{TRAIN_HOVER_STYLE}}
-
 
 .cell:hover text {
     opacity: 1.0;
