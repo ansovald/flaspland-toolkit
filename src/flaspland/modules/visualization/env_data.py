@@ -55,7 +55,7 @@ class EnvData:
             for row in range(self.height):
                 tile = Tile()
                 if not env.rail.grid[row, col] == 0:
-                    tile.file = get_track_file[env.rail.grid[row, col]]
+                    tile.file = get_track_file(env.rail.grid[row, col])
                     for s in self.stations:
                         if row == s["y"] and col == s["x"]:
                             tile.station = svg_registry["station"][0]

@@ -107,16 +107,14 @@ def get_dynamic_style(num_trains: int, cell_size: int, dynamic_style_path=DYNAMI
             )
     sizes = get_dynamic_sizes(cell_size)
     dynamic_style = dynamic_style_path.read_text()
-    dynamic_style = dynamic_style = dynamic_style.replace(
-            "RECT_STROKE_WIDTH", sizes["rect_stroke_width"]
-        ).replace(
-            "TRAIN_PATH_WIDTH", sizes["train_path_width"]
-        ).replace(
-            "TRAIN_PATH_DASHARRAY", sizes["train_path_dasharray"]
-        ).replace(
-            "/* TRAIN_COLORS */", train_color_vars
-        ).replace(
-            "/* TRAIN_STYLES */", get_train_rules(num_trains=num_trains, cell_size=cell_size)
-        )
+    replacements = {
+        "RECT_STROKE_WIDTH": sizes["rect_stroke_width"],
+        "TRAIN_PATH_WIDTH": sizes["train_path_width"],
+        "TRAIN_PATH_DASHARRAY": sizes["train_path_dasharray"],
+        "/* TRAIN_COLORS */": train_color_vars,
+        "/* TRAIN_STYLES */": get_train_rules(num_trains=num_trains, cell_size=cell_size)
+    }
+    for key, value in replacements.items():
+        dynamic_style = dynamic_style.replace(key, value)
     return dynamic_style
     

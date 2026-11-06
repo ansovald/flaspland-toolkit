@@ -29,7 +29,7 @@ class Landscape:
     def from_env_data(cls, env_data: EnvData, cell_size=25, style=SVG_STYLE):
         landscape = cls()
         landscape.sizes_from_env(env_data, cell_size=cell_size)
-        landscape.style = style
+        landscape.prepare_style(style=style)
 
         # list to hold svg snippets that are used repeatedly (mostly landscape tiles)
         landscape.use_groups = []
@@ -47,6 +47,16 @@ class Landscape:
 
         landscape.build_landscape(env_data=env_data)
         return landscape
+
+    def prepare_style(self, style=SVG_STYLE):
+        self.style = style
+        style_replacements = {
+            "LABEL_FONT_SIZE": f"{self.font_size * .8:.2f}px",
+            "LABEL_FONT_STROKE": f"{self.cell_size * .02:.2f}px",
+            "HOVER_RECT_STROKE_WIDTH": f"{self.cell_size / 20:.2f}px"
+        }
+        for key, value in style_replacements.items():
+            self.style = self.style.replace(key, value)
 
     @classmethod
     def from_svg(cls, svg_file: PathlibPath):
@@ -161,15 +171,8 @@ class Landscape:
         """
         Create a Text object for a cell at grid coordinates (x, y) with the given text.
         """
-        label = Text(text)
-        label.font_family = "monospace"
-        label.font_size = self.font_size * 0.8
-        label.fill = "#000000"
-        label.font_weight = 700
-        label.stroke_width = self.cell_size * .02
+        label = Text(text, class_name="cell_label_text")
         label.pos = self.get_abs_vector(x + .5, y +.5)
-        label.text_anchor = "middle"
-        label.dominant_baseline = "central"
         return label
 
     def make_cell_label(self, x, y):
@@ -185,7 +188,7 @@ class Landscape:
             width=self.cell_size,
             height=self.cell_size,
             id=f"cell_{x}_{y}_hover_rect",
-            class_name="hover-rect"
+            class_name="hover-rect label-selector"
         )
         label_group.append(hover_rect)
         coord_label = self.cell_label(x, y, f"{x},{y}")
@@ -223,9 +226,8 @@ class Landscape:
                 pos=self.get_abs_vector(-1, y, grid_offset=True),
                 width=(self.landscape_width + 2) * self.cell_size,
                 height=self.cell_size,
-                fill="#000000",
-                fill_opacity=0.0,
-                id=f"row_label_{y}_background"
+                id=f"row_label_{y}_background",
+                class_name=f"label-selector"
             )
             row_group.append(label_background)
             label_left = self.cell_label(-1, y, str(y))
@@ -243,9 +245,8 @@ class Landscape:
                 pos=self.get_abs_vector(x, -1, grid_offset=True),
                 width=self.cell_size,
                 height=(self.landscape_height + 2) * self.cell_size,
-                fill="#000000",
-                fill_opacity=0.0,
-                id=f"col_label_{x}_background"
+                id=f"col_label_{x}_background",
+                class_name="label-selector"
             )
             column_group.append(label_background)
             top_label = self.cell_label(x, -1, str(x))
