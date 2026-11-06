@@ -1,6 +1,7 @@
 """
 
-Functionality to unify the style elements of the flatland-rl SVG files
+Functionality to unify the style elements of the flatland-rl SVG files.
+Not used during runtime, only for preprocessing SVG files to unify their styles.
 
 """
 
@@ -12,7 +13,7 @@ import xml.etree.ElementTree as ET
 
 CSS_PATH = Path(__file__).parent / "svg_styles.css"
 
-ORIG_SVG_PATH = Path("/Users/karlosswald/repositories/flatland/pr-venv/lib/python3.12/site-packages/flatland/svg")
+ORIG_SVG_PATH = Path("~/repositories/flatland/pr-venv/lib/python3.12/site-packages/flatland/svg").expanduser()
 
 SVG_TYPES = {
     "Buildings": "Buildings*.svg",

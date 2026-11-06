@@ -55,7 +55,8 @@ SCENERY_FILES_WATER = [
 ]
 
 STATION_FILES = [
-    "Bahnhof.png"
+    # renamed, since the original files contain `#`, which can lead to reference problems in XML
+    "Station.svg"
 ]
 
 REGISTRY_STRUCTURE = {
@@ -67,7 +68,7 @@ REGISTRY_STRUCTURE = {
     "station": ("station", STATION_FILES)
 }
 
-def build_svg_registry(registry_structure=REGISTRY_STRUCTURE):
+def get_svg_registry(registry_structure=REGISTRY_STRUCTURE):
     registry = {}
     for type in registry_structure:
         registry[type] = []
@@ -79,13 +80,11 @@ def build_svg_registry(registry_structure=REGISTRY_STRUCTURE):
             registry[type].append(file)
     return registry
 
-SVG_REGISTRY = build_svg_registry()
-
 TRACKS_FILES = {}
 TRACKS_DIR = Path("tracks")
 for track_file in (Path(__file__).parent / "tracks" ).glob("*.svg"):
     num = int(track_file.stem)
     TRACKS_FILES[num] = track_file
 
-if __name__ == "__main__":
-    print(SVG_REGISTRY)
+def get_track_file(num):
+    return TRACKS_FILES.get(num)

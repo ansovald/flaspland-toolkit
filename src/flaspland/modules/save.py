@@ -1,7 +1,8 @@
 # functions for saving a Flatland environment as various file types
 
-from flatland.utils.rendertools import RenderTool, AgentRenderVariant
+from flatland.utils.rendertools import RenderTool
 import pickle
+import json
 from .visualization import Landscape, EnvData
 from pathlib import Path
 

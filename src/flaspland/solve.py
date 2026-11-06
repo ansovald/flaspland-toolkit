@@ -19,7 +19,7 @@ from tqdm import tqdm
 # custom modules
 from .modules.api import FlatlandPlan
 from .modules.convert import convert_malfunctions_to_clingo, convert_formers_to_clingo, convert_futures_to_clingo
-from .modules.render_tools import GifRenderer, HtmlRenderer
+from .modules.render import GifRenderer, HtmlRenderer
 from .modules.defs import DIR_MAP, ACTION_MAP, STATE_MAP
 
 # clingo
@@ -217,7 +217,7 @@ def main(argv=None) -> int:
 
         if env_renderers:
             for renderer in env_renderers:
-                renderer.render_frame(timestep=timestep, actions=actions)
+                renderer.process_actions(timestep=timestep, actions=actions)
 
         _, _, done, info = env.step(actions[timestep])
 

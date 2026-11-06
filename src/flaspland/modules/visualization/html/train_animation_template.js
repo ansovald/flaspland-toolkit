@@ -1,5 +1,5 @@
   const state_TRAIN_ID = path_TRAIN_ID[step];
-  train_TRAIN_ID_main.style.opacity = state_TRAIN_ID.opacity;
+  train_TRAIN_ID.style.opacity = state_TRAIN_ID.opacity;
   train_TRAIN_ID_animate.setAttribute('dur', `${ms_per_step}ms`);
   train_TRAIN_ID_animate.setAttribute('keyPoints', `${state_TRAIN_ID.keyPoints}`);
   train_TRAIN_ID_animate.setAttribute('path', `${state_TRAIN_ID.motionPath}`);

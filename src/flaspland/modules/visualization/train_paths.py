@@ -1,5 +1,5 @@
 from __future__ import annotations
-from .curves import CURVES, Point, CurveSegment, DIR_TO_ROT, get_rotation, ROTATION_OFFSETS
+from .curves import CURVES, Point, CurveSegment, DIRECTION_TO_ROTATION, get_rotation, ROTATION_OFFSETS
 import logging
 from dataclasses import dataclass
 from pathlib import Path
@@ -8,6 +8,10 @@ logger = logging.getLogger(__name__)
 
 LOG_DIR = Path("logs")
 LOG_DIR.mkdir(exist_ok=True)
+
+"""
+Module for handling train paths and movements within the visualization.
+"""
 
 @dataclass
 class TrainState:
@@ -95,16 +99,16 @@ class TrainPath:
     """
     TrainPath is the main class for building the display states and motion paths for a single train.
     It is initialized with the train_id, train_info (dict passed by the environment), 
-    time_frame (total timesteps), and cell_size (for SVG scaling).
+    timeframe (total timesteps), and cell_size (for SVG scaling).
     When initialized, it builds the main TrainStates and Movements for the train.
     The main method is `get_display_states()`, which returns a dict of display states for each timestep,
     including action, status, position, motionPath, signal, opacity, and keyPoints.    
     """
-    def __init__(self, train_id: int, train_info: dict, time_frame: int, cell_size: int, log_results=True):
+    def __init__(self, train_id: int, train_info: dict, timeframe: int, cell_size: int, log_states=True):
         self.train_id = train_id
         self.speed = train_info['speed']
         self.train_info = train_info
-        self.time_frame = time_frame
+        self.timeframe = timeframe
         self.cell_size = cell_size
         self.states: list[dict] = []
         self.initial_state = None
@@ -113,28 +117,26 @@ class TrainPath:
         self.movements: list[Movement] = []
         self.timestep_movement_mapping: dict[int, int] = {}
         self.path_string = ""
-        logger.debug(f"Initializing TrainPath for train {train_id} with time frame {time_frame}")
+        logger.debug(f"Initializing TrainPath for train {train_id} with time frame {timeframe}")
         self.build_states()
         self.build_segments()
-        if log_results:
+        if log_states:
             # for debugging: write main states to file
-            with open(LOG_DIR / f"train_{train_id}_main_states.log", "w") as f:
+            with open(LOG_DIR / f"train_{train_id}_states.log", "w") as f:
+                f.write(f"Timestep-State mapping:\n{self.timestep_state_mapping}\nStates:\n")
                 for i, state in enumerate(self.states):
                     f.write(f"{i}: " + state.__str__() + "\n")
             with open(LOG_DIR / f"train_{train_id}_movements.log", "w") as f:
                 f.write(self.timestep_movement_mapping.__str__() + "\n")
                 for i, action in enumerate(self.movements):
                     f.write(f"{i}: " + action.__str__() + "\n")
-            with open(LOG_DIR / f"train_{train_id}_timestep_state_mapping.log", "w") as f:
-                for timestep, state_index in self.timestep_state_mapping.items():
-                    f.write(f"{timestep}: {state_index}\n")
         logger.debug(f"Finished initializing TrainPath for train {train_id}")
         
     def build_states(self):
         """
         Build the main TrainStates for the train by parsing the train_info path.
         Adds 'ARRIVED' state when the train reaches its destination (not automatically provided by the toolkit), 
-        and then fills in 'PARKED' state until time_frame.
+        and then fills in 'PARKED' state until timeframe.
         Consecutive timesteps with same coordinates and status are merged into a single TrainState with duration.
         Also builds the list of Movements for non-wait actions, linking them to the TrainStates.
         """
@@ -142,7 +144,7 @@ class TrainPath:
         timestep = 0
         last_coords = None
         last_state = None
-        while timestep <= self.time_frame:
+        while timestep <= self.timeframe:
             current_state = self.trainstate_at(timestep)
             logger.debug(f"Processing timestep {timestep} for train {self.train_id}:\n{current_state}")
             coords = current_state.coords
@@ -182,7 +184,6 @@ class TrainPath:
             timestep += 1
         last_timestep = self.states[-1].timestep + self.states[-1].duration
         dest_coords = Point.from_dict(self.train_info['end']['position'])
-        # distance_to_destination = abs(dest_coords.x - self.states[-1].coords.x) + abs(dest_coords.y - self.states[-1].coords.y)
         distance_to_destination = self.states[-1].coords.distance_to(dest_coords)
         if distance_to_destination == 1:
             last_coords = dest_coords
@@ -205,10 +206,10 @@ class TrainPath:
         logger.debug(f"Adding ARRIVED state for train {self.train_id} at timestep {last_timestep}:\n{arrival_state}")
         self.timestep_state_mapping[last_timestep] = len(self.states) - 1
 
-        if last_timestep < self.time_frame:
+        if last_timestep < self.timeframe:
             self.timestep_state_mapping[last_timestep] = len(self.states) - 1
             last_timestep += 1
-            duration = self.time_frame - last_timestep + 1
+            duration = self.timeframe - last_timestep + 1
             last_state = TrainState(
                 timestep=last_timestep,
                 coords=None,
@@ -218,7 +219,7 @@ class TrainPath:
                 display_rotation=arrival_state.rotation
             )
             self.states.append(last_state)
-            for i in range(last_timestep, self.time_frame + 1):
+            for i in range(last_timestep, self.timeframe + 1):
                 self.timestep_state_mapping[i] = len(self.states) - 1
 
     def build_segments(self):
@@ -337,9 +338,9 @@ class TrainPath:
             if not state.coords or state.coords.is_none():
                 opacity = 0.0
             else:
-                opacity = .8
+                opacity = 1.0
         elif status == "READY_TO_DEPART":
-            opacity = .8
+            opacity = 1.0
         action = self.action_at(timestep)
         if state:
             position = state.coords
@@ -370,7 +371,7 @@ class TrainPath:
         Returns a dict mapping timestep to display info dict.
         """
         display_states = {}
-        for timestep in range(self.time_frame + 1):
+        for timestep in range(self.timeframe + 1):
             logger.debug(f"\nCalling display info for train {self.train_id} at timestep {timestep}")
             display_states[timestep] = self.display_info(timestep)
             logger.debug(f"Display info for train {self.train_id} at timestep {timestep}:\n{display_states[timestep]}")
@@ -403,6 +404,7 @@ class TrainPath:
     def action_at(self, timestep: int) -> str:
         """
         Looks up the action for the given timestep from the train_info dict.
+        If the action is not found, returns 'wait' (before departure/after arrival).
         """
         if timestep in self.train_info['path']:
             step_dict = self.train_info['path'][timestep]
@@ -426,7 +428,10 @@ class TrainPath:
         and converts it to rotation in degrees.
         """
         if timestep in self.train_info['path']:
-            rotation = DIR_TO_ROT.get(self.train_info['path'][timestep]['direction'], None)
+            rotation = DIRECTION_TO_ROTATION.get(self.train_info['path'][timestep]['direction'], None)
             return rotation
         else:
             return None
+
+    def get_path_string(self) -> str:
+        return self.path_string

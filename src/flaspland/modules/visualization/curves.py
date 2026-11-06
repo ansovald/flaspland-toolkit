@@ -7,23 +7,20 @@ logger = logging.getLogger(__name__)
 
 """
 Defines classes and functions for handling curve segments in the HTML visualization of Flatland
-used to calculate the exact movements nevessary for the train to smoothly move along the tracks of an environment.
+used to calculate the exact movements necessary for the train to smoothly move along the tracks
 """
 
-# needed to calculate absolute positions
-LEFT_MARGIN = 1  # in cells
-TOP_MARGIN = 1   # in cells
-
-DIR_TO_ROT = {
+DIRECTION_TO_ROTATION = {
     "n": 0,
     "e": 90,
     "s": 180,
     "w": 270
 }
 
-ROT_TO_DIR = { v: k for k, v in DIR_TO_ROT.items() }
-
 def get_direction(coords: Point, next_coords: Point) -> str:
+        """
+        Determine the cardinal direction from one cell to a neighboring cell.
+        """
         x_offset = next_coords.x - coords.x
         y_offset = next_coords.y - coords.y
         if x_offset != 0 and y_offset != 0:
@@ -41,11 +38,11 @@ def get_direction(coords: Point, next_coords: Point) -> str:
         
 def get_rotation(coords: Point, next_coords: Point) -> int:
     """
-    Given two Points representing coordinates, returns the rotation in degrees
+    Given two Points representing adjacent cells, returns the rotation in degrees
     corresponding to the direction from coords to next_coords.
     """
     direction = get_direction(coords, next_coords)
-    return DIR_TO_ROT.get(direction, None)
+    return DIRECTION_TO_ROTATION.get(direction, None)
 
 @dataclass
 class Point:
@@ -116,8 +113,10 @@ class Point:
             return float('inf')
         return ((self.x - other.x) ** 2 + (self.y - other.y) ** 2) ** 0.5
 
-# ROTATION_OFFSETS are needed to generate wait paths for trains
-# specifically in curves. They define a small offset in the direction of the train's rotation.
+"""
+ROTATION_OFFSETS are needed to generate wait paths for trains, specifically in curves. 
+They define a small offset in the direction of the train's rotation.
+"""
 ROTATION_OFFSETS = {
     0: Point(0, -1),
     45: Point(1, -1),
@@ -191,17 +190,19 @@ class CurveSegment:
             center=self.center + offset
         )
 
-# OFFSETS FOR INCOMING CURVE SEGMENTS
-# Assume curve segment approximates a quarter circle with radius 0.5 cell size
-# Then mid point of curve is at (1 / sqrt(2)) ~= 0.70711 of radius along both axes
-# since radius is 0.5 cell size, mid point offset is 0.35355
-# i.e., offset from center point is (0.5 - 0.35355) = 0.14645 of cell_size along both axes
-# Rest of points are calculated graphically using Inkscape:
-# - offset of tangent control point is 0.09377
-# - offset of control point on incoming line: 14.645,22.095
-# - offset of incoming/outgoing point 14.645,35.355
+"""
+OFFSETS FOR INCOMING CURVE SEGMENTS
+For displaying a train correctly on the track, we need to handle curves accurately.
+Assume curve segment approximates a quarter circle with radius 0.5 cell size
+Then mid point of curve is at (1 / sqrt(2)) * radius ~= 0.35355 (on both axes)
+i.e., offset from center point is (0.5 - 0.35355) = 0.14645 of cell_size along both axes
+Rest of points were calculated graphically using Inkscape:
+- offset of tangent control point is 0.09377
+- offset of control point on incoming line: 14.645,22.095
+- offset of incoming/outgoing point 14.645,35.355
 
-# We calculate mid point from center of cell, then everything else from mid point
+We calculate mid point from center of cell, then everything else from mid point
+"""
 
 def incoming_curve(mid: Point, start: Point, c_0: Point=None, c_1: Point=None, center=Point(.5,.5)) -> CurveSegment:
     # mid point is relative to center
@@ -229,8 +230,11 @@ def outgoing_curve(mid: Point, end: Point, c_0: Point=None, c_1: Point=None, cen
     )
     return segment
 
-# define curves for all direction changes
-# mid is the offset of the center, where the train would be displayed in this cell
+"""
+define curves for all direction changes
+mid is the offset of the center, where the train would be displayed in this cell
+"""
+
 CURVES = {
      (0, 90): {   # north to east
         "incoming": incoming_curve(
@@ -297,7 +301,10 @@ CURVES = {
         "rotation": 225
     }
 }
-# add straight paths
+
+"""
+Add straight paths
+"""
 CURVES[(0, 0)] = {
     "incoming": CurveSegment(
         start=Point(.5, 1),
@@ -323,7 +330,9 @@ CURVES[(90, 90)] = {
     "rotation": 90
 }
 
-# add reverse curves for each entry
+"""
+Add reverse curves for each entry (i.e., when the train travels in the opposite direction)
+"""
 for (start_dir, end_dir), segments in list(CURVES.items()):
     if start_dir == end_dir:
         # straight path, just add reverse of same direction

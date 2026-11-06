@@ -7,10 +7,13 @@ SVG_DIR = FilePath(__file__).resolve().parent
 svg_style_path = SVG_DIR / "svg_styles.css"
 SVG_STYLE = svg_style_path.read_text()
 
-train_colors = ["#d50000", "#2979ff", "#ff6f00", "#fdd835", "#00c853", "#aa00ff", "#00bfa5", "#c51162", "#64dd17", "#304ffe", "#ffd600", "#00b8d4", "#9e9e9e", "#ff1744", "#00e676", "#6200ea", "#2962ff", "#aeea00", "#f50057", "#00b0ff"]
+TRAIN_COLORS = ["#d50000", "#2979ff", "#ff6f00", "#fdd835", "#00c853", "#aa00ff", "#00bfa5", "#c51162", "#64dd17", "#304ffe", "#ffd600", "#00b8d4", "#9e9e9e", "#ff1744", "#00e676", "#6200ea", "#2962ff", "#aeea00", "#f50057", "#00b0ff"]
+
+# Used for scaling SVG elements consistently. The original SVG tiles all hav dim 240x240.
+SVG_SCALE = 240
 
 def get_train_color(train_id):
-    return train_colors[int(train_id) % len(train_colors)]
+    return TRAIN_COLORS[int(train_id) % len(TRAIN_COLORS)]
 
 TRACK_FILES = []
 track_dir = SVG_DIR / "tracks"
@@ -20,7 +23,10 @@ for file in track_dir.iterdir():
         TRACK_FILES.append(file)
 
 def make_signal_group(train_id):
-    # Signal group for the train, directly constructed from SVG elements
+    """
+    Create an SVG group representing the signal for a specific train.
+    The signal consists of a background path and two lights (red and green).
+    """
     signal_group = G(id=f"train_{train_id}_signal_group", class_name="train_signal")
     background = Path(d="m 228,76.8 c 0,9.941 -8.059,18 -18,18 -9.941,-0 -18,-8.059 -18,-18 V 30 c 0,-9.941 8.059,-18 18,-18 9.941,0 18,8.059 18,18z", style="stroke: #000000; stroke-width: 14.4;")
     signal_group.append(background)
@@ -30,20 +36,24 @@ def make_signal_group(train_id):
     signal_group.append(green_light)
     return signal_group
 
-def get_train_svg(train_id, cell_size=25, scale=240):
+def get_train_svg(train_id, cell_size=25, scale=SVG_SCALE):
+    """
+    Train SVG is stored as a generic template and customized for each train using its ID
+    """
     # Generic train svg file used as a template for all trains, with placeholders for train id and color
-    svg_file = SVG_DIR / "train-generic.xml"
+    svg_file = SVG_DIR / "generic_train.xml"
     svg_string = svg_file.read_text()
-    # replace color placeholder with actual color
     svg_string = svg_string.replace("{TRAIN_ID}", str(train_id))
     train_group = clean_svg_group(svg_string, f"train_{train_id}_group", cell_size, scale, class_name="train")
     train_group.id = f"train_{train_id}_group"
     train_group.append(make_signal_group(train_id))
     return train_group
 
-def make_train_group(train_id, cell_size=25, scale=240):
-    # container to hold all elements of the train for easy highlighting
-    train_group = G(id=f"train_{train_id}_main", 
+def make_train_group(train_id, cell_size=25, scale=SVG_SCALE):
+    """
+    Create a train group containing the train itself and background, rotation, and animation groups.
+    """
+    train_group = G(id=f"train_{train_id}", 
                     class_name="train",
                     opacity="1")
     
@@ -87,10 +97,10 @@ def make_train_group(train_id, cell_size=25, scale=240):
     return train_group
 
 
-def clean_svg_group(svg_file, group_id, cell_size=25, scale=240, class_name=None):
+def clean_svg_group(svg_file, group_id, cell_size=25, scale=SVG_SCALE, class_name=None):
     """
-    Loads an SVG file or string, cleans it by removing elements (mostly style definitions) not necessary 
-    when used in the environment visualization, and returns a cleaned SVG group.
+    Loads an SVG file or string, cleans it by removing elements (definitions, title, style) 
+    not necessary when visualizing the environment, and adds the remaining element to a new SVG group.
     """
     if isinstance(svg_file, FilePath):
         elem = ET.parse(svg_file).getroot()

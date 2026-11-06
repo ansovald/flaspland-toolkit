@@ -166,13 +166,15 @@ h2 {
   opacity: 1;
 }
 
-.cell:hover text {
+.cell_label:hover text {
     opacity: 1.0;
     transition: 0.2s;
+    cursor: default;
 }
-.cell:hover rect, .row_label:hover rect, .col_label:hover rect {
+.cell_label:hover rect, .row_label:hover rect, .col_label:hover rect {
     fill-opacity: 0.3;
     transition: 0.2s;
+    cursor: default;
 }
 
 .slider-path {

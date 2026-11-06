@@ -1,5 +1,3 @@
-# rendering visualizations
-# from flatland.envs.rail_env import RailEnvActions
 from flatland.utils.rendertools import RenderTool
 import imageio.v2 as imageio
 from PIL import Image, ImageDraw, ImageFont
@@ -11,22 +9,32 @@ from .defs import DIR_MAP, ACTION_MAP
 
 import json
 
+from abc import abstractmethod
+
 import logging
 logger = logging.getLogger(__name__)
 
 class Renderer():
+    """
+    Wrapper class for rendering visualizations of Flatland environments.
+    """
     def __init__(self, env, env_name, *args, **kwargs):
         self.env = env
         self.env_name = env_name
         logger.info(f"Initializing Renderer for environment {env_name}")
 
-    def render_frame(self, timestep):
+    @abstractmethod
+    def process_actions(self, timestep, *args, **kwargs):
         pass
 
+    @abstractmethod
     def save(self, output_dir, *args, **kwargs):
         pass
 
 class GifRenderer(Renderer):
+    """
+    Renderer class for creating GIF animations using the default rendering tool.
+    """
     def __init__(self, env, env_name, gl="PILSVG", font=None):
         logger.info("Initializing GifRenderer")
         super().__init__(env, env_name)
@@ -39,7 +47,10 @@ class GifRenderer(Renderer):
         if self.font is None:
             self.font = Path(__file__).resolve().parent / "LiberationMono-Regular.ttf"
 
-    def render_frame(self, timestep, *args, **kwargs):
+    def process_actions(self, timestep, *args, **kwargs):
+        """
+        Renders the frame for the given timestep using the current environment state.
+        """
         filename = Path(self.frames.name) / f'flatland_frame_{timestep:04d}.png'
         self.env_renderer.render_env(show=True, show_observations=False, show_predictions=False)
         self.env_renderer.gl.save_image(str(filename))
@@ -79,6 +90,9 @@ class GifRenderer(Renderer):
         logger.info(f"GIF saved to {output_file}")
 
 class HtmlRenderer(Renderer):
+    """
+    HTML renderer for visualizing controllable, animated Flatland environments.
+    """
     def __init__(self, env, env_path, env_name, cell_size=25, milliseconds_per_step=400):
         logger.info("Initializing HtmlRenderer")
         super().__init__(env, env_name)
@@ -105,7 +119,11 @@ class HtmlRenderer(Renderer):
         self.train_data = get_train_data(env)
         self.timeframe = 0
 
-    def render_frame(self, timestep, actions):
+    def process_actions(self, timestep, actions):
+        """
+        Builds a record of train positions, directions, statuses, and actions for the given timestep.
+        Later used to calculate the train paths for visualization.
+        """
         for a in actions[timestep]:
             (x, y), direction = get_position_and_direction(self.env.agents[a])
             self.train_data[a]["path"][timestep] = {
