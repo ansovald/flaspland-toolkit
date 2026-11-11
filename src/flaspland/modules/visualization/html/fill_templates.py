@@ -1,19 +1,16 @@
 from pathlib import Path
-from ..svg import get_train_color
+from ..load_templates import load_template
 
-HTML_TEMPLATE_PATH = Path(__file__).parent / "template.html"
+# Template files that should be in the `templates` directory relative from where flaspland is executed
+HTML_TEMPLATE_FN = "template.html"
+TRAIN_WIDGET_FN = "train_widget.html"
+DYNAMIC_STYLE_FN = "dynamic_style.css"
+TRAIN_STYLE_TEMPLATE_FN = "train_style_template.css"
 
-TRAIN_WIDGET_PATH = Path(__file__).parent / "train_widget.html"
-
-DYNAMIC_STYLE_PATH = Path(__file__).parent / "dynamic_style.css"
-
-TRAIN_STYLE_TEMPLATE_PATH = Path(__file__).parent / "train_style_template.css"
-
+# Static paths to template files that are stored in this module (not copied to the user's instance)
 TRAIN_ANIMATION_TEMPLATE_PATH = Path(__file__).parent / "train_animation_template.js"
 STOP_ANIMATION_TEMPLATE_PATH = Path(__file__).parent / "stop_animation_template.js"
-
 SVG_PAN_ZOOM_PATH = Path(__file__).parent / "svg-pan-zoom.js"
-
 TRAIN_DEF_TEMPLATE_PATH = Path(__file__).parent / "train_def_template.js"
 
 def get_dynamic_sizes(cell_size: int):
@@ -32,11 +29,11 @@ def get_dynamic_sizes(cell_size: int):
         "train_path_dasharray": f"{train_path_dash:.2f}px,{train_path_dash:.2f}px"
     }
 
-def get_html(html_template_path=HTML_TEMPLATE_PATH, svg_pan_zoom_path=SVG_PAN_ZOOM_PATH):
+def get_html(svg_pan_zoom_path=SVG_PAN_ZOOM_PATH, html_template_fn=HTML_TEMPLATE_FN):
     """
     Load the main HTML template and inject the SVG pan-zoom script.
     """
-    html_template = html_template_path.read_text()
+    html_template = load_template(html_template_fn)
     svg_pan_zoom = svg_pan_zoom_path.read_text()
     html_template = html_template.replace("PAN_ZOOM_SCRIPT", svg_pan_zoom)
     return html_template
@@ -52,11 +49,11 @@ def get_train_definitions(num_trains: int, train_def_template_path=TRAIN_DEF_TEM
         train_defs += train_def
     return train_defs
 
-def get_train_widgets(train_data: dict, train_widget_path=TRAIN_WIDGET_PATH):
+def get_train_widgets(train_data: dict, train_widget_fn=TRAIN_WIDGET_FN):
     """
     Generate HTML ino widgets for each train to be displayed on the right side of the interface.
     """
-    train_widget = train_widget_path.read_text()
+    train_widget = load_template(train_widget_fn)
     train_widgets = ""
     for id, train_info in train_data.items():
         widget = train_widget.replace("TRAIN_ID", str(id))
@@ -64,12 +61,13 @@ def get_train_widgets(train_data: dict, train_widget_path=TRAIN_WIDGET_PATH):
         train_widgets += widget
     return train_widgets
 
-def get_train_rules(num_trains: int, cell_size: int, train_style_template_path=TRAIN_STYLE_TEMPLATE_PATH):
+def get_train_rules(num_trains: int, cell_size: int, train_style_template_fn=TRAIN_STYLE_TEMPLATE_FN):
     """
     Generate CSS rules for each train based on the dynamic sizes and train ID.
     """
     sizes = get_dynamic_sizes(cell_size)
-    train_style_template = train_style_template_path.read_text().replace(
+    train_style_template = load_template(train_style_template_fn)
+    train_style_template = train_style_template.replace(
             "HOVER_WIDTH", sizes["hover_width"]
         ).replace(
             "RECT_STROKE_WIDTH", sizes["rect_stroke_width"]
@@ -93,10 +91,17 @@ def get_train_animations(num_trains: int, train_animation_template_path=TRAIN_AN
 
     return train_animation_code, stop_animation_code
 
-def get_dynamic_style(num_trains: int, cell_size: int, dynamic_style_path=DYNAMIC_STYLE_PATH):
+def get_dynamic_style(num_trains: int, cell_size: int, train_colors: list = None, dynamic_style_fn=DYNAMIC_STYLE_FN):
     """
     Generate the dynamic CSS style including train colors, sizes, and train-specific hover rules.
     """
+    def get_train_color(id: int):
+        try:
+            if id > len(train_colors) - 1:
+                id = id % len(train_colors)
+            return train_colors[id]
+        except:
+            return "#FFFFFF"  # default color if train_colors is not provided or index is out of range
     train_color_vars = ""
     train_color_template = "  --train-TRAIN_ID-color: TRAIN_COLOR;"
     for id in range(num_trains):
@@ -106,7 +111,7 @@ def get_dynamic_style(num_trains: int, cell_size: int, dynamic_style_path=DYNAMI
                 "TRAIN_COLOR", get_train_color(id)
             )
     sizes = get_dynamic_sizes(cell_size)
-    dynamic_style = dynamic_style_path.read_text()
+    dynamic_style = load_template(dynamic_style_fn)
     replacements = {
         "RECT_STROKE_WIDTH": sizes["rect_stroke_width"],
         "TRAIN_PATH_WIDTH": sizes["train_path_width"],

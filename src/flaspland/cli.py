@@ -9,26 +9,83 @@ from pathlib import Path
 
 from . import __version__
 
+import logging
+
+LOGGING_CONFIG_FN = "logging_config.toml"
+LOGGING_CONFIG = Path(__file__).resolve().parent / LOGGING_CONFIG_FN
+# Load logging configuration from the TOML file if it exists
+if LOGGING_CONFIG.is_file():
+    import tomllib
+    try:
+        with LOGGING_CONFIG.open("rb") as f:
+            config = tomllib.load(f)
+            LOG_LEVEL = getattr(logging, config.get("log_level", "INFO").upper(), logging.INFO)
+            LOG_DIR = Path(config.get("log_directory", "logs"))
+            LOG_DIR.mkdir(exist_ok=True)
+            LOG_FILE = LOG_DIR / config.get("log_file", "flaspland.log")
+    except Exception as e:
+        print(f"Failed to load logging configuration from {LOGGING_CONFIG}, using default valus:\n{e}")
+else:
+    LOG_LEVEL = logging.INFO
+    LOG_DIR = Path("logs")
+    LOG_DIR.mkdir(exist_ok=True)
+    LOG_FILE = LOG_DIR / "flaspland.log"
+
+LOG_LEVEL = logging.INFO
+LOG_DIR = Path("logs")
+LOG_DIR.mkdir(exist_ok=True)
+LOG_FILE = LOG_DIR / "flaspland.log"
+
+logging.basicConfig(
+    level=LOG_LEVEL,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler(LOG_FILE, encoding="utf-8", mode='a'),
+    ],
+)
+logger = logging.getLogger(__name__)
+
 COMMANDS = {
-    "init": "create config.toml with the default settings for 'flaspland build'",
+    "init": "create cconfig and template files with 'flaspland build'",
     "build": "generate Flatland environments into envs/",
     "solve": "solve an environment with your encodings and simulate the plan",
 }
 
-CONFIG_TEMPLATE = Path(__file__).resolve().parent / "config.toml"
+BUILD_CONFIG_FN = "build_config.toml"
+SOLVE_CONFIG_FN = "solve_config.toml"
+
+BUILD_CONFIG_TEMPLATE = Path(__file__).resolve().parent / BUILD_CONFIG_FN
+
+SOLVE_CONFIG_TEMPLATE = Path(__file__).resolve().parent / SOLVE_CONFIG_FN
+VIS_TEMPLATES_DIRECTORY = Path(__file__).resolve().parent / "modules" / "visualization" / "templates"
 
 
 def init(argv) -> int:
-    """ copy the default config.toml into the current folder """
+    """ 
+    copy the default build_config.toml, visualization.toml, 
+    and visualization templates into the current folder
+    """
     parser = ArgumentParser(prog="flaspland init", description=COMMANDS["init"].capitalize() + ".")
-    parser.add_argument("--force", action="store_true", help="overwrite an existing config.toml")
+    parser.add_argument("--force", action="store_true", help="overwrite existing config and template files")
     args = parser.parse_args(argv)
 
-    target = Path("config.toml")
-    if target.exists() and not args.force:
-        raise SystemExit("config.toml already exists; use --force to overwrite it")
-    shutil.copyfile(CONFIG_TEMPLATE, target)
-    print("created config.toml; edit it and run 'flaspland build'")
+    targets = [
+        Path(BUILD_CONFIG_FN),
+        Path(SOLVE_CONFIG_FN),
+        Path(LOGGING_CONFIG_FN),
+        Path("templates")
+    ]
+    for target in targets:
+        if target.exists() and not args.force:
+            logger.warning(f"{target} already exists; use --force to overwrite it")
+
+    shutil.copyfile(BUILD_CONFIG_TEMPLATE, Path(BUILD_CONFIG_FN))
+    shutil.copyfile(SOLVE_CONFIG_TEMPLATE, Path(SOLVE_CONFIG_FN))
+    shutil.copyfile(LOGGING_CONFIG, Path(LOGGING_CONFIG_FN))
+    if not Path("templates").exists():
+        shutil.copytree(VIS_TEMPLATES_DIRECTORY, Path("templates"))
+    logger.info("Initialized project folder. Edit `build_config.toml` and run build. `solve_config.toml` and `templates` control solving & visualization, 'logging_config.toml' controls logging.")
     return 0
 
 

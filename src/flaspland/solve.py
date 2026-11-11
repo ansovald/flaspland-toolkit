@@ -10,6 +10,7 @@ import warnings
 import time
 import pickle
 import logging
+import tomllib
 
 # import tempfile
 from argparse import ArgumentParser, Namespace
@@ -25,20 +26,20 @@ from .modules.defs import DIR_MAP, ACTION_MAP, STATE_MAP
 # clingo
 from clingo.application import clingo_main
 
-LOG_LEVEL = logging.INFO
-LOG_DIR = Path("logs")
-LOG_DIR.mkdir(exist_ok=True)
-LOG_FILE = LOG_DIR / "flaspland.log"
-
-logging.basicConfig(
-    level=LOG_LEVEL,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler(LOG_FILE, encoding="utf-8", mode='a'),
-    ],
-)
 logger = logging.getLogger(__name__)
+
+DEFAULT_CONFIG_FILE = Path("solve_config.toml")
+
+DEFAULT_CONFIG = {
+    "save_model": True,
+    "save_stats": True,
+    "save_encodings": True,
+    "encodings": None,
+    "renderers": ["html"],
+    "ms_per_step": 300,
+    "cell_size": 25,
+    "train_colors": ["#d50000", "#2979ff", "#ff6f00", "#fdd835", "#00c853", "#aa00ff", "#00bfa5", "#c51162", "#64dd17", "#304ffe", "#ffd600", "#00b8d4", "#9e9e9e", "#ff1744", "#00e676", "#6200ea", "#2962ff", "#aeea00", "#f50057", "#00b0ff"]
+}
 
 class MalfunctionManager():
     def __init__(self, num_agents):
@@ -83,16 +84,23 @@ def check_plan(action_list, when) -> list:
 
 
 class SimulationManager():
-    def __init__(self,env,encodings,clingo_args=()):
+    def __init__(self, env, env_name, encodings, clingo_args=()):
         self.env = env
         self.encodings = encodings
         self.clingo_args = list(clingo_args)
+        self.stats = {
+            "env_name": env_name,
+            "num_agents": self.env.get_num_agents(),
+            "encodings": self.encodings
+        }
 
     def build_actions(self) -> list:
         """ create initial list of actions """
         # pass env, encodings
         app = FlatlandPlan(self.env, None)
         clingo_main(app, self.encodings + self.clingo_args)
+        self.stats.update(app.stats)
+        self.model = app.model
         return(check_plan(app.action_list, "for the initial plan"))
 
     def provide_context(self, actions, timestep, malfunctions) -> str:
@@ -110,7 +118,33 @@ class SimulationManager():
         # pass env, encodings, context
         app = FlatlandPlan(self.env, context)
         clingo_main(app, self.encodings + self.clingo_args)
+        self.stats.update(app.stats)
+        self.model = app.model
         return(check_plan(app.action_list, "while replanning after a malfunction"))
+
+    def save_model(self, output_dir) -> None:
+        """ save the model to the local drive """
+        with (Path(output_dir) / "model.lp").open("w") as f:
+            for symbol in self.model:
+                f.write(str(symbol) + "\n")
+        logger.info(f"Model saved to {Path(output_dir) / 'model.lp'}")
+
+    def save_stats(self, output_dir) -> None:
+        """ save the stats to the local drive """
+        import json
+        with (Path(output_dir) / "clingo_stats.json").open("w") as f:
+            json.dump(self.stats, f, indent=4)
+        logger.info(f"Clingo stats saved to {Path(output_dir) / 'stats.json'}")
+
+    def save_encodings(self, output_dir) -> None:
+        """
+        copy the encodings used to the output directory.
+        Useful when you want to track performance of different versions of your encodings.
+        """
+        from shutil import copy
+        for encoding in self.encodings:
+            copy(encoding, Path(output_dir) / Path(encoding).name)
+        logger.info(f"Encodings saved to {Path(output_dir)}")
 
 
 class OutputLogManager():
@@ -127,6 +161,7 @@ class OutputLogManager():
             f.write("agent;timestep;position;direction;status;given_command\n")
             for log in self.logs:
                 f.write(log)
+        logger.info(f"Paths saved to {Path(directory) / 'paths.csv'}")
 
 
 def get_position_and_direction(agent) -> tuple:
@@ -138,31 +173,73 @@ def get_position_and_direction(agent) -> tuple:
         return(None, agent.target_configuration[1])
     return(None, agent.initial_configuration[1])
 
-
-def get_args(argv=None):
-    """ capture command line inputs; everything after `--` is passed on to clingo """
-    argv = sys.argv[1:] if argv is None else list(argv)
-    clingo_args = []
-    if '--' in argv:
-        split = argv.index('--')
-        argv, clingo_args = argv[:split], argv[split+1:]
-
+def build_parser() -> ArgumentParser:
     parser = ArgumentParser(
         prog='flaspland solve',
         description='Solve a Flatland environment with your encodings and simulate the plan. '
                     'Results are saved to output/<date>_<time>/ in the current folder.',
         epilog="Options after '--' are passed on to clingo, e.g. 'flaspland solve env.pkl main.lp -- -t 4'.")
     parser.add_argument('env', type=str, help='the Flatland environment, a .pkl file created by flaspland build')
-    parser.add_argument('encodings', type=str, nargs='+', help='one or more encodings (.lp) to load into clingo, e.g. a single file of #include statements')
-    parser.add_argument('--time-limit', type=int, metavar='SECONDS', help='stop each clingo call after SECONDS and use the best plan found so far')
-    parser.add_argument('--render-gif', action='store_true', default=False, help='if included, run the Flatland simulation but do not render a GIF')
-    parser.add_argument('--render-html', action="store_true", default=True, help='if included, render an HTML visualization')
-    args = parser.parse_args(argv)
+    parser.add_argument("-c", "--config", type=str, help="TOML file with solve & visualization configuration (overriden by flags); default: solve_config.toml in the current folder")
+    parser.add_argument('-e', '--encodings', type=str, nargs='+', help='one or more encodings (.lp) to load into clingo')
+    parser.add_argument('-t', '--time-limit', type=int, metavar='SECONDS', help='stop each clingo call after SECONDS and use the best plan found so far')
+    parser.add_argument('-m', '--save-model', action='store_true', help='save the model after solving')
+    parser.add_argument('-s', '--save-stats', action='store_true', help='save clingo statistics')
+    parser.add_argument('--save-encodings', action='store_true', help='save the encodings used. Useful for tracking the effects of changes to the encodings, or reproducing results.'
+                                                                      'Note: #include statements are NOT resolved when saving encodings.')
+    vis = parser.add_argument_group('Visualization options')
+    vis.add_argument('--renderers', type=str, nargs='+', help='list of renderers to use, e.g. "html" or "gif"')
+    vis.add_argument('--train-colors', type=str, nargs='+', help='list of colors for individual trains')
+    vis.add_argument('--cell-size', type=int, help='size of each cell in the HTML visualization, in SVG user units')
+    parser.set_defaults(**DEFAULT_CONFIG)
+    return parser
 
+def load_config(parser: ArgumentParser, config_file: Path) -> dict:
+    """Load solve & visualization configuration from a TOML file and return as a dictionary suitable for parser.set_defaults"""
+    try:
+        with open(config_file, 'rb') as f:
+            config = tomllib.load(f)
+    except FileNotFoundError:
+        raise FileNotFoundError(f"Config file not found: {config_file}")
+    except Exception as e:
+        raise ValueError(f"Invalid config file: {config_file}") from e
+
+    return config
+
+def parse_args(argv: list[str] | None = None) -> Namespace:
+    parser = build_parser()
+    argv = sys.argv[1:] if argv is None else list(argv)
+    clingo_args = []
+    if '--' in argv:
+        split = argv.index('--')
+        argv, clingo_args = argv[:split], argv[split+1:]
+
+    pre, _ = parser.parse_known_args(argv)
+    solve_config = pre.config
+    if solve_config is None and DEFAULT_CONFIG_FILE.is_file():
+        solve_config = DEFAULT_CONFIG_FILE
+    if solve_config is None:
+        logger.info("No solve_config file specified; using default.")
+    try:
+        solve_config = Path(solve_config)
+        parser.set_defaults(**load_config(parser, solve_config))
+    except Exception as e:
+        logger.error(f"Config file not found or invalid: {solve_config}")
+    
+    args = parser.parse_args(argv)
     if args.time_limit is not None:
         clingo_args.append(f'--time-limit={args.time_limit}')
     args.clingo_args = clingo_args
-    return(args)
+
+    if args.renderers:
+        # if passed from command line, separate into individual renderers (separated by +)
+        renderers = []
+        for r in args.renderers:
+            for rp in r.split('+'):
+                renderers.append(rp)
+        args.renderers = renderers
+
+    return args
 
 
 def create_output_dir() -> Path:
@@ -179,7 +256,7 @@ def create_output_dir() -> Path:
 
 
 def main(argv=None) -> int:
-    args: Namespace = get_args(argv)
+    args = parse_args(argv)
     env_path = Path(args.env)
     if not env_path.is_file():
         raise SystemExit(f"Environment not found: {args.env}")
@@ -188,21 +265,26 @@ def main(argv=None) -> int:
             env = pickle.load(f)
         except (ModuleNotFoundError, AttributeError) as e:
             raise SystemExit(f"Could not load '{args.env}' ({e}). It was probably created with a different version of flatland; regenerate it with 'flaspland build'.")
-    
-    render_gif = args.render_gif
-    render_html = args.render_html
+        
     env_renderers = []
     env_name = Path(args.env).stem
-    if render_gif:
-        gif_renderer = GifRenderer(env=env, env_name=env_name)
-        env_renderers.append(gif_renderer)
-    if render_html:
-        html_renderer = HtmlRenderer(env=env, env_path=env_path, env_name=env_name)
-        env_renderers.append(html_renderer)
-
+    for r in args.renderers:
+        if r == 'gif':
+            try:
+                env_renderers.append(GifRenderer(env=env, env_name=env_name))
+            except Exception as e:
+                logger.error(f"Failed to initialize GIF renderer: {e} (but continuing with other renderers)")
+        elif r == 'html':
+            try:
+                env_renderers.append(HtmlRenderer(env=env, env_path=env_path, env_name=env_name, config=args.__dict__))
+            except Exception as e:
+                logger.error(f"Failed to initialize HTML renderer: {e} (but continuing with other renderers)")
+        else:
+            logger.warning(f"Unknown renderer specified: {r}")
+    
     # create manager objects
     mal = MalfunctionManager(env.get_num_agents())
-    sim = SimulationManager(env, args.encodings, args.clingo_args)
+    sim = SimulationManager(env, env_name, args.encodings, args.clingo_args)
     log = OutputLogManager()
 
     actions = sim.build_actions()
@@ -246,7 +328,13 @@ def main(argv=None) -> int:
     # save output log
     log.save(output_dir)
 
-    logger.info(f"Results saved to {output_dir}")
+    if args.save_model:
+        sim.save_model(output_dir=output_dir)
+    if args.save_stats:
+        sim.save_stats(output_dir=output_dir)
+    if args.save_encodings:
+        sim.save_encodings(output_dir=output_dir)
+
     return(0)
 
 

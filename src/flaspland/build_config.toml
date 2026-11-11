@@ -1,6 +1,6 @@
 # Parameters for `flaspland build`
 #
-# `flaspland build` reads config.toml from the folder it is run in. Edit the
+# `flaspland build` reads build_config.toml from the folder it is run in. Edit the
 # values below to change what gets generated. Any value can also be overridden
 # for a single run on the command line, e.g.
 #     flaspland build 5 --agents 8 --seed 42

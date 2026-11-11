@@ -1,0 +1,5 @@
+# Logging configuration for Flaspland Toolkit
+log_level = "INFO"
+log_directory = "logs"
+log_file = "flaspland.log"
+handlers = ["console", "file"]

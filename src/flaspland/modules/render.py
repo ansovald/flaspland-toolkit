@@ -21,7 +21,6 @@ class Renderer():
     def __init__(self, env, env_name, *args, **kwargs):
         self.env = env
         self.env_name = env_name
-        logger.info(f"Initializing Renderer for environment {env_name}")
 
     @abstractmethod
     def process_actions(self, timestep, *args, **kwargs):
@@ -36,7 +35,7 @@ class GifRenderer(Renderer):
     Renderer class for creating GIF animations using the default rendering tool.
     """
     def __init__(self, env, env_name, gl="PILSVG", font=None):
-        logger.info("Initializing GifRenderer")
+        logger.info(f"Initializing GifRenderer for environment {env_name}")
         super().__init__(env, env_name)
         self.env_renderer = RenderTool(env, gl=gl)
         self.env_renderer.reset()
@@ -93,11 +92,13 @@ class HtmlRenderer(Renderer):
     """
     HTML renderer for visualizing controllable, animated Flatland environments.
     """
-    def __init__(self, env, env_path, env_name, cell_size=25, milliseconds_per_step=400):
-        logger.info("Initializing HtmlRenderer")
+    def __init__(self, env, env_path, env_name, config):
+        logger.info(f"Initializing HtmlRenderer for environment {env_name}")
         super().__init__(env, env_name)
-        
-        self.milliseconds_per_step = milliseconds_per_step
+        logger.debug(f"HtmlRenderer config:\n{config}")
+        self.milliseconds_per_step = config.get("ms_per_step", 300)
+        cell_size = config.get("cell_size", 25)
+        self.train_colors = config.get("train_colors", ["#d50000", "#2979ff", "#ff6f00", "#fdd835", "#00c853", "#aa00ff", "#00bfa5", "#c51162", "#64dd17", "#304ffe", "#ffd600", "#00b8d4", "#9e9e9e", "#ff1744", "#00e676", "#6200ea", "#2962ff", "#aeea00", "#f50057", "#00b0ff"])
 
         svg_path = Path(*("svg" if part == "pkl" else part for part in Path(env_path).parts))
         if svg_path.suffix == ".pkl":
@@ -107,7 +108,7 @@ class HtmlRenderer(Renderer):
             landscape = Landscape.from_svg(svg_path)
             self.landscape = landscape
         except Exception as e:
-            logger.info(f"Failed to load landscape from {svg_path}: {e}")
+            logger.info(f"Failed to load landscape from {svg_path}: {e}, attempting to create from environment data.")
             env_name = env_path.stem
             env_data = EnvData(env, env_name)
             landscape = Landscape.from_env_data(env_data=env_data, cell_size=cell_size)
@@ -140,8 +141,11 @@ class HtmlRenderer(Renderer):
             json.dump(self.train_data, f, indent=4)
         logger.info(f"Train info saved to {output_file}")
 
-        animation = Animation(landscape=self.landscape, train_data=self.train_data, timeframe=self.timeframe, env_name=self.env_name)
-        animation.save_html(output_dir / "visualization.html", milliseconds_per_step=self.milliseconds_per_step)
+        try:
+            animation = Animation(landscape=self.landscape, train_data=self.train_data, timeframe=self.timeframe, env_name=self.env_name, train_colors=self.train_colors)
+            animation.save_html(output_dir / "visualization.html", milliseconds_per_step=self.milliseconds_per_step)
+        except Exception as e:
+            logger.error(f"Failed to save HTML visualization: {e}")
 
 
 def get_position_and_direction(agent):

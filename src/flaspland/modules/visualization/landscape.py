@@ -1,7 +1,8 @@
 from __future__ import annotations
 import xml.etree.ElementTree as ET
 from pydreamplet import SVG, G, Vector, Rect, Text, Path, SvgElement
-from .svg import SVG_SCALE, clean_svg_group, SVG_STYLE, make_train_group, build_animation_controls
+from .load_templates import load_template
+from .svg import SVG_SCALE, clean_svg_group, make_train_group, build_animation_controls
 from .html import (get_train_definitions, get_train_widgets, get_train_animations,
                    get_html, get_dynamic_style)
 from .train_paths import TrainPath
@@ -11,6 +12,8 @@ import json
 
 import logging
 logger = logging.getLogger(__name__)
+
+SVG_STYLE_FN = "svg_styles.css"
 
 class Landscape:
     """
@@ -26,7 +29,9 @@ class Landscape:
         self.height = height
 
     @classmethod
-    def from_env_data(cls, env_data: EnvData, cell_size=25, style=SVG_STYLE):
+    def from_env_data(cls, env_data: EnvData, cell_size=25, style=None):
+        if style is None:
+            style = load_template(SVG_STYLE_FN)
         landscape = cls()
         landscape.sizes_from_env(env_data, cell_size=cell_size)
         landscape.prepare_style(style=style)
@@ -48,7 +53,7 @@ class Landscape:
         landscape.build_landscape(env_data=env_data)
         return landscape
 
-    def prepare_style(self, style=SVG_STYLE):
+    def prepare_style(self, style):
         self.style = style
         style_replacements = {
             "LABEL_FONT_SIZE": f"{self.font_size * .8:.2f}px",
@@ -286,13 +291,14 @@ class Animation:
     containing all relevant information for visualizing the train trajectories
     """
     def __init__(self, landscape: Landscape, train_data: dict, timeframe: int = 0, 
-                 env_name: str = "", log_train_states: bool = False):
+                 env_name: str = "", log_train_states: bool = False,
+                 train_colors: list = None):
         self.landscape = landscape
         self.train_data = train_data
         self.timeframe = timeframe
         self.env_name = env_name
         # generate a css style for the animation, with dynamic styles based on the number of trains and cell size
-        self.dynamic_style = get_dynamic_style(num_trains=len(self.train_data), cell_size=self.landscape.cell_size)
+        self.dynamic_style = get_dynamic_style(num_trains=len(self.train_data), cell_size=self.landscape.cell_size, train_colors=train_colors)
         self.control_canvas = build_animation_controls(control_cell_size=self.landscape.cell_size)
         self.display_states = {}
         self.place_trains(log_states=log_train_states)

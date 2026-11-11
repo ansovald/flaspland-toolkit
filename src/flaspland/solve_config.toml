@@ -1,0 +1,59 @@
+# Parameters for `flaspland solve`
+#
+# `flaspland solve` reads solve_config.toml from the folder it is run in. Edit the
+# values below to change what gets generated.
+
+# ==== SOLVE OPTIONS ====
+# If save_model is true, the model atoms will be dumped to a file in the output folder
+save_model = true
+# If save_stats is true, clingo control statistics will be saved to a file in the output folder
+save_stats = true
+# If save_encodings is true, the encoding files will be copied to the output folder
+#    This is useful if you want to track differences in performance between encoding versions.
+save_encodings = false
+# List of encoding files to use, in the format ["file_1.lp", "file_2.lp", ...]
+encodings = []
+
+# ==== VISUALIZATION OPTIONS ====
+# --- Select renderer(s) ----
+# Available renderers: "html", "gif"
+# Example: renderers = ["html"]
+renderers = ["html"]
+
+
+# --- HTML visualization options ----
+
+# cell_size: size of each cell in the HTML visualization, in px.
+# Controls the absolute size of the control elements (buttons, sliders, etc.)
+# Most other sizes are calculated relative to the cell size.
+# Note that for the SVG visualization itself, cell size doesn't really matter, since it's scalable.
+# Default: 25
+cell_size = 25
+
+# Milliseconds per simulation step in the HTML visualization. Can be changed during viewing.
+# Default: 300
+ms_per_step = 300
+
+# Colors of individual trains. If the list is shorter than the number of trains, colors will be reused.
+train_colors = [
+    "#d50000", 
+    "#2979ff", 
+    "#ff6f00", 
+    "#fdd835", 
+    "#00c853", 
+    "#aa00ff", 
+    "#00bfa5", 
+    "#c51162", 
+    "#64dd17", 
+    "#304ffe", 
+    "#ffd600", 
+    "#00b8d4", 
+    "#9e9e9e", 
+    "#ff1744", 
+    "#00e676", 
+    "#6200ea", 
+    "#2962ff", 
+    "#aeea00", 
+    "#f50057", 
+    "#00b0ff"
+]

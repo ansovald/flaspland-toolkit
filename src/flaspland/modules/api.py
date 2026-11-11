@@ -12,6 +12,8 @@ class FlatlandPlan(Application):
         self.env = env
         self.actions = actions
         self.action_list = None
+        self.stats = None
+        self.model = None
 
     def main(self, ctl, files):
         # add encodings
@@ -47,6 +49,9 @@ class FlatlandPlan(Application):
 
         if last is None:
             return
+
+        self.model = last
+        self.stats = ctl.statistics
 
         # capture output actions for renderer
         self.action_list = build_action_list([last])

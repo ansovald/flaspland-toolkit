@@ -8,7 +8,7 @@ single value with a command-line flag. Precedence: flag > config file > built-in
 
 Examples
 --------
-    flaspland build                        # 1 env, settings from config.toml
+    flaspland build                        # 1 env, settings from build_config.toml
     flaspland build 10 --agents 5 --cities 3 --seed 42
     flaspland build 5 --config configs/hard.toml --malfunction-rate 0.01
 """
@@ -35,9 +35,12 @@ from flatland.envs.line_generators import sparse_line_generator
 from flatland.envs.observations import GlobalObsForRailEnv
 from flatland.envs.malfunction_generators import MalfunctionParameters, ParamMalfunctionGen
 
+import logging
+logger = logging.getLogger(__name__)
+
 
 # used when --config is not given and the file exists in the current folder
-DEFAULT_CONFIG = Path("config.toml")
+DEFAULT_CONFIG = Path("build_config.toml")
 
 DEFAULTS = {
     "width": 30,
@@ -151,7 +154,7 @@ def build_parser() -> argparse.ArgumentParser:
                         help="number of environments to create")
     parser.add_argument("-c", "--config", type=Path, metavar="FILE", default=None,
                         help="TOML file with the generation parameters (flags override it); "
-                             "default: config.toml in the current folder, if it exists")
+                             "default: build_config.toml in the current folder, if it exists")
 
     grid = parser.add_argument_group("grid")
     grid.add_argument("--width", type=positive_int, metavar="N", help="grid width in cells")
@@ -203,9 +206,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     if config is None and DEFAULT_CONFIG.is_file():
         config = DEFAULT_CONFIG
     if config is None:
-        print("note: no config.toml in this folder, using built-in defaults", file=sys.stderr)
+        logger.info("no build_config.toml in this folder, using built-in defaults")
     elif config.is_file():
-        print(f"note: using settings from {config}", file=sys.stderr)
+        logger.info(f"note: using settings from {config}")
         parser.set_defaults(**load_config(parser, config))
     else:
         parser.error(f"config file not found: {config}")
@@ -305,7 +308,7 @@ def generate_valid_env(args: argparse.Namespace, seeds) -> tuple[RailEnv, int | 
             if not short:
                 return env, seed
             problem = f"no path through all {expected} cities for train(s) {short}"
-        print(f"  seed={seed}: {problem}; retrying", file=sys.stderr)
+        logger.info(f"seed={seed}: {problem}; retrying")
     raise RuntimeError(f"no valid environment after {MAX_ATTEMPTS} attempts (last: {problem})")
 
 
@@ -330,13 +333,13 @@ def main(argv: list[str] | None = None) -> int:
             save_svg(env, file_name, path)
         except Exception as exc:  # keep going so one bad env doesn't kill a batch
             failures += 1
-            print(f"[{file_name}] failed (seed={seed}): {exc}", file=sys.stderr)
+            logger.error(f"[{file_name}] failed (seed={seed}): {exc}")
             continue
 
-        print(f"[{file_name}] saved (seed={seed})")
+        logger.info(f"[{file_name}] saved (seed={seed})")
 
     if failures:
-        print(f"{failures} of {args.num_envs} environment(s) failed", file=sys.stderr)
+        logger.info(f"{failures} of {args.num_envs} environment(s) failed")
     return 1 if failures else 0
 
 

@@ -1,19 +1,14 @@
 from pydreamplet import G, Vector, Path, Circle, Rect
 import xml.etree.ElementTree as ET
 from pathlib import Path as FilePath
+import logging
+
+logger = logging.getLogger(__name__)
 
 SVG_DIR = FilePath(__file__).resolve().parent
 
-svg_style_path = SVG_DIR / "svg_styles.css"
-SVG_STYLE = svg_style_path.read_text()
-
-TRAIN_COLORS = ["#d50000", "#2979ff", "#ff6f00", "#fdd835", "#00c853", "#aa00ff", "#00bfa5", "#c51162", "#64dd17", "#304ffe", "#ffd600", "#00b8d4", "#9e9e9e", "#ff1744", "#00e676", "#6200ea", "#2962ff", "#aeea00", "#f50057", "#00b0ff"]
-
 # Used for scaling SVG elements consistently. The original SVG tiles all hav dim 240x240.
 SVG_SCALE = 240
-
-def get_train_color(train_id):
-    return TRAIN_COLORS[int(train_id) % len(TRAIN_COLORS)]
 
 TRACK_FILES = []
 track_dir = SVG_DIR / "tracks"
