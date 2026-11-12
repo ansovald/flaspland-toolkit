@@ -36,6 +36,14 @@
   stroke-opacity: 0.05;
 }
 
+.signal-background{
+  fill:#201e1e;
+  stroke: #201e1e;
+  stroke-width: SIGNAL_STROKE_WIDTH;
+}
+.red_light{fill:#cc3232;}
+.green_light{fill:#2dc937;}
+
 .tree-1{fill:#8B5420;}
 .tree-2{fill:#A8642A;}
 .tree-3{fill:#80983C;}

@@ -10,7 +10,7 @@ LOG_DIR = Path("logs")
 LOG_DIR.mkdir(exist_ok=True)
 
 """
-Module for handling train paths and movements within the visualization.
+Module for handling train paths and movements as well as signals within the visualization.
 """
 
 @dataclass
@@ -33,9 +33,7 @@ class TrainState:
     outgoing_segment: CurveSegment = None
 
     def get_wait_path(self, cell_size) -> CurveSegment:
-        center_offset = Point(0,0)
-        if self.center_offset is not None:
-            center_offset = self.center_offset
+        center_offset = self.get_center_offset()
         offset = ROTATION_OFFSETS[self.display_rotation] * 0.0001
         start = Point(0.5, 0.5) + center_offset
         end = start + offset
@@ -46,13 +44,23 @@ class TrainState:
         wait_path = wait_segment.standalone_path(cell_size)
         return wait_path
 
+    def get_center_offset(self) -> Point:
+        if self.center_offset is None:
+            self.center_offset = Point(0, 0)
+        return self.center_offset
+
+    def get_display_rotation(self) -> int:
+        if self.display_rotation is not None:
+            return self.display_rotation, self.get_center_offset()
+        return self.rotation, self.get_center_offset()
+
 class Movement:
     """
     Movement represents a train action ('move_forward', 'move_right', 'move_left') that 
     connects two TrainStates over a series of timesteps (depending on train speed).
     It holds the motion path and keypoints for animating the train movement between the two states.
     No movement is created for 'wait' actions; their paths are generated directly from the TrainState, 
-    using `get_wait_path(state.display_rotation)`.
+    using `get_wait_path()`.
     """
     def __init__(self, train_path: TrainPath, action: str, start: int, duration: int):
         self.train_path = train_path
@@ -376,11 +384,49 @@ class TrainPath:
             display_states[timestep] = self.display_info(timestep)
             logger.debug(f"Display info for train {self.train_id} at timestep {timestep}:\n{display_states[timestep]}")
         return display_states
+
+    def get_signal_at(self, timestep: int) -> Signal | None:
+        """
+        Returns the signal info for the train at the given timestep.
+        """
+        coords = self.coords_at(timestep)
+        if coords is None or coords.is_none():
+            return None
+        signal_state = None
+        action = self.action_at(timestep)
+        if action == "wait":
+            signal_state = "red"
+        else:
+            if self.action_at(timestep - 1) == "wait":
+                signal_state = "green"
+        if signal_state is None:
+            return None
+        display_rotation, offset = self.display_rotation_offset_at(timestep)
+        return Signal(
+            coords = self.coords_at(timestep),
+            rotation = self.rotation_at(timestep),
+            display_rotation = display_rotation,
+            offset = offset,
+            states = {timestep: signal_state}
+        )
+
+    def get_signal_list(self) -> SignalList:
+        """
+        Returns a SignalList containing the signal info for the train over all timesteps,
+        that can be merged with other SignalLists.
+        """
+        signal_list = SignalList()
+        for timestep in range(self.timeframe + 1):
+            signal_list.add_signal(self.get_signal_at(timestep))
+        return signal_list
     
     def trainstate_at(self, timestep: int) -> TrainState:
         """
-        Looks up the TrainState for the given timestep from the train_info dict.
+        If the timestep has already been recorded in the timestep_state_mapping, returns that TrainState.
+        Otherwise, constructs a new TrainState from the train_info dict.
         """
+        if timestep in self.timestep_state_mapping:
+            return self.states[self.timestep_state_mapping[timestep]]
         return TrainState(
             timestep=timestep,
             coords=self.coords_at(timestep),
@@ -388,6 +434,12 @@ class TrainPath:
             status=self.status_at(timestep),
             rotation=self.rotation_at(timestep)
         )
+
+    def display_rotation_offset_at(self, timestep: int) -> tuple[int, Point]:
+        """
+        Returns the display rotation for the train at the given timestep.
+        """
+        return self.trainstate_at(timestep).get_display_rotation()
     
     def coords_at(self, timestep: int) -> Point:
         """
@@ -435,3 +487,80 @@ class TrainPath:
 
     def get_path_string(self) -> str:
         return self.path_string
+
+
+class Signal:
+    def __init__(self, coords, rotation, display_rotation, offset, states):
+        self.coords = coords
+        self.rotation = rotation
+        self.display_rotation = display_rotation
+        self.offset = offset
+        self.states = states
+
+    def __repr__(self):
+        return f"Signal(coords={self.coords}, rotation={self.rotation}, display_rotation={self.display_rotation}, offset={self.offset}, states={self.states})"
+
+    def get_display_states(self, timeframe: int) -> dict[int, dict]:
+        display_states = {}
+        for timestep in range(timeframe + 1):
+            # signals should be red by default if no state is specified
+            if timestep in self.states:
+                display_states[timestep] = self.states[timestep]
+            else:
+                # if no more train will pass through this signal, we turn it off (signal not displayed anymore)
+                display_states[timestep] = "off"
+                # try to find the next state for this signal, and use its color
+                i = timestep
+                while i <= timeframe and i not in self.states:
+                    i += 1
+                if i <= timeframe and i in self.states:
+                    display_states[timestep] = self.states[i]
+
+        return display_states
+
+class SignalList:
+    def __init__(self):
+        self.signals = []
+
+    def add_signal(self, signal: Signal):
+        if signal is None:
+            return
+        # check if there is a signal at the same position and rotation
+        for existing_signal in self.signals:
+            if existing_signal.coords == signal.coords and existing_signal.rotation == signal.rotation:
+                # update the states of the existing signal
+                existing_signal.states.update(signal.states)
+                return
+        self.signals.append(signal)
+
+    def extend(self, other_signal_list: "SignalList"):
+        for signal in other_signal_list.get_signals():
+            self.add_signal(signal)
+
+    def update_states(self, train_paths: list[TrainPath]):
+        for signal in self.signals:
+            for train_path in train_paths:
+                for train_state in train_path.states:
+                    if train_state.coords == signal.coords and train_state.rotation == signal.rotation:
+                        timestep = train_state.timestep
+                        if train_path.action_at(timestep) != 'wait':
+                            signal.states[timestep] = "green"
+                            logger.info(f"Signal at {signal.coords} turned green at timestep {timestep}")
+
+    def get_signals(self):
+        return self.signals
+
+    def __repr__(self):
+        return f"SignalList(signals={self.signals})"
+
+    def __iter__(self):
+        return iter(self.signals)
+
+    def __len__(self):
+        return len(self.signals)
+
+    def get_display_states(self, timeframe: int) -> dict[int, dict]:
+        display_states = {}
+        for i, signal in enumerate(self.signals):
+            display_states[i] = signal.get_display_states(timeframe)
+        return display_states

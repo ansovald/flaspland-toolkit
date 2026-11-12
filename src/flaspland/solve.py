@@ -38,6 +38,7 @@ DEFAULT_CONFIG = {
     "renderers": ["html"],
     "ms_per_step": 300,
     "cell_size": 25,
+    "log_train_states": False,
     "train_colors": ["#d50000", "#2979ff", "#ff6f00", "#fdd835", "#00c853", "#aa00ff", "#00bfa5", "#c51162", "#64dd17", "#304ffe", "#ffd600", "#00b8d4", "#9e9e9e", "#ff1744", "#00e676", "#6200ea", "#2962ff", "#aeea00", "#f50057", "#00b0ff"]
 }
 
@@ -189,8 +190,9 @@ def build_parser() -> ArgumentParser:
                                                                       'Note: #include statements are NOT resolved when saving encodings.')
     vis = parser.add_argument_group('Visualization options')
     vis.add_argument('--renderers', type=str, nargs='+', help='list of renderers to use, e.g. "html" or "gif"')
-    vis.add_argument('--train-colors', type=str, nargs='+', help='list of colors for individual trains')
     vis.add_argument('--cell-size', type=int, help='size of each cell in the HTML visualization, in SVG user units')
+    vis.add_argument('--log-train-states', action='store_true', help='log the train states used for calculating the displayed path')
+    vis.add_argument('--train-colors', type=str, nargs='+', help='list of colors for individual trains')
     parser.set_defaults(**DEFAULT_CONFIG)
     return parser
 

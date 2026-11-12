@@ -31,13 +31,18 @@ CONTROL_SVG
   <div><i>ms</i> per step:</div>
   <input type="number" id="ms_per_step_input" value="MILLISECONDS_PER_STEP" min="10" max="10000" step="20">
 </div>
+<div class="settings_widget">
+  <div>Step:</div>
+  <input type="number" id="time_step_input" value="0" min="0" max="TIMEFRAME" step="1">
+</div>
 </div>
 
 <script>
 /* =======================
-   TRAIN LOCATION DATA
+   TRAIN & SIGNAL DATA
    ======================= */
-const data = TRAIN_DATA;
+const train_data = TRAIN_DATA;
+const signal_data = SIGNAL_DATA;
 
 
 /* =======================
@@ -62,7 +67,17 @@ var panZoomCanvas = svgPanZoom('#svg_canvas', {
 
 TRAIN_DEFS
 
+SIGNAL_DEFS
+
 const stepLabel = document.getElementById("step_label");
+const timeStepInput = document.getElementById("time_step_input");
+timeStepInput.onchange = e => {
+  const value = parseInt(timeStepInput.value);
+  if (!isNaN(value) && value >= 0 && value <= MAX_STEP) {
+    currentStep = value;
+    renderStep(currentStep);
+  }
+};
 
 const playButton = document.getElementById("play_button");
 const pauseButton = document.getElementById("pause_button");
@@ -109,6 +124,7 @@ PATH_STEP
   const handleX = sliderRect.left + percent * sliderRect.width;
   // console.log(`step: ${step}, max: ${MAX_STEP}, percent: ${percent}, handleX: ${handleX}, slider width: ${sliderRect.width}`);
   sliderHandle.setAttribute("cx", sliderOffset + handleX - sliderRect.left);
+  timeStepInput.value = step;
 }
 
 /* =======================

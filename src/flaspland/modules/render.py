@@ -98,6 +98,7 @@ class HtmlRenderer(Renderer):
         logger.debug(f"HtmlRenderer config:\n{config}")
         self.milliseconds_per_step = config.get("ms_per_step", 300)
         cell_size = config.get("cell_size", 25)
+        self.log_train_states = config.get("log_train_states", False)
         self.train_colors = config.get("train_colors", ["#d50000", "#2979ff", "#ff6f00", "#fdd835", "#00c853", "#aa00ff", "#00bfa5", "#c51162", "#64dd17", "#304ffe", "#ffd600", "#00b8d4", "#9e9e9e", "#ff1744", "#00e676", "#6200ea", "#2962ff", "#aeea00", "#f50057", "#00b0ff"])
 
         svg_path = Path(*("svg" if part == "pkl" else part for part in Path(env_path).parts))
@@ -142,10 +143,11 @@ class HtmlRenderer(Renderer):
         logger.info(f"Train info saved to {output_file}")
 
         try:
-            animation = Animation(landscape=self.landscape, train_data=self.train_data, timeframe=self.timeframe, env_name=self.env_name, train_colors=self.train_colors)
+            animation = Animation(landscape=self.landscape, train_data=self.train_data, timeframe=self.timeframe + 1, env_name=self.env_name, train_colors=self.train_colors, log_train_states=self.log_train_states)
             animation.save_html(output_dir / "visualization.html", milliseconds_per_step=self.milliseconds_per_step)
         except Exception as e:
-            logger.error(f"Failed to save HTML visualization: {e}")
+            # logger.error(f"Failed to save HTML visualization: {e}")
+            raise e
 
 
 def get_position_and_direction(agent):

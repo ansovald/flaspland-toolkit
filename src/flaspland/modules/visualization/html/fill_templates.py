@@ -13,6 +13,9 @@ STOP_ANIMATION_TEMPLATE_PATH = Path(__file__).parent / "stop_animation_template.
 SVG_PAN_ZOOM_PATH = Path(__file__).parent / "svg-pan-zoom.js"
 TRAIN_DEF_TEMPLATE_PATH = Path(__file__).parent / "train_def_template.js"
 
+SIGNAL_DEF_TEMPLATE_PATH = Path(__file__).parent / "signal_def_template.js"
+SIGNAL_ANIMATION_TEMPLATE_PATH = Path(__file__).parent / "signal_animation_template.js"
+
 def get_dynamic_sizes(cell_size: int):
     """
     Calculate sizes for different style elements based on the cell size.
@@ -90,6 +93,26 @@ def get_train_animations(num_trains: int, train_animation_template_path=TRAIN_AN
         stop_animation_code += stop_animation_template.replace("TRAIN_ID", str(id))
 
     return train_animation_code, stop_animation_code
+
+def get_signal_definitions(num_signals: int, signal_def_template_path=SIGNAL_DEF_TEMPLATE_PATH):
+    """
+    Generate JS code for signal definitions for each signal.
+    """
+    signal_def_template = signal_def_template_path.read_text()
+    signal_def_code = ""
+    for id in range(num_signals):
+        signal_def_code += signal_def_template.replace("SIGNAL_ID", str(id))
+    return signal_def_code
+
+def get_signal_animations(num_signals: int, signal_animation_template_path=SIGNAL_ANIMATION_TEMPLATE_PATH):
+    """
+    Generate JS code for signal animations for each signal.
+    """
+    signal_animation_template = signal_animation_template_path.read_text()
+    signal_animation_code = ""
+    for id in range(num_signals):
+        signal_animation_code += signal_animation_template.replace("SIGNAL_ID", str(id))
+    return signal_animation_code
 
 def get_dynamic_style(num_trains: int, cell_size: int, train_colors: list = None, dynamic_style_fn=DYNAMIC_STYLE_FN):
     """

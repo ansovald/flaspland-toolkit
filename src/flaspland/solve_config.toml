@@ -34,6 +34,11 @@ cell_size = 25
 # Default: 300
 ms_per_step = 300
 
+# If log_train_states is true, the train states (used for calculating the displayed path) 
+# will be logged to the logs folder.
+# Useful if you want to extend or debug the visualization logic
+log_train_states = false
+
 # Colors of individual trains. If the list is shorter than the number of trains, colors will be reused.
 train_colors = [
     "#d50000", 

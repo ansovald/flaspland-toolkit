@@ -1,0 +1,21 @@
+<ns0:svg xmlns:ns0="http://www.w3.org/2000/svg" version="1.1" id="Ebene_1" x="0px" y="0px" viewBox="0 0 240 240" style="enable-background:new 0 0 240 240;" xml:space="preserve">
+<ns0:g>
+	<ns0:rect class="no-fill" width="240" height="240" />
+</ns0:g>
+<ns0:g>
+   <ns0:path
+     class="signal-background"
+     d="m 228,76 c 0,9.941126 -8.05887,18 -18,18 -9.94113,0 -18,-8.058876 -18,-18 V 30 c 0,-9.941126 8.05887,-18 18,-18 9.94113,0 18,8.058876 18,18 z"
+     />
+   <ns0:circle
+     class="red_light"
+     cx="210"
+     cy="30"
+     r="18" />
+   <ns0:circle
+     class="green_light"
+     cx="210"
+     cy="77"
+     r="18" />
+</ns0:g>
+</ns0:svg>

@@ -2,10 +2,11 @@ from __future__ import annotations
 import xml.etree.ElementTree as ET
 from pydreamplet import SVG, G, Vector, Rect, Text, Path, SvgElement
 from .load_templates import load_template
-from .svg import SVG_SCALE, clean_svg_group, make_train_group, build_animation_controls
+from .svg import SVG_SCALE, clean_svg_group, make_train_group, build_animation_controls, get_signal_svg
 from .html import (get_train_definitions, get_train_widgets, get_train_animations,
+                   get_signal_definitions, get_signal_animations,
                    get_html, get_dynamic_style)
-from .train_paths import TrainPath
+from .train_paths import TrainPath, SignalList
 from .env_data import EnvData, Tile
 from pathlib import Path as PathlibPath
 import json
@@ -58,7 +59,8 @@ class Landscape:
         style_replacements = {
             "LABEL_FONT_SIZE": f"{self.font_size * .8:.2f}px",
             "LABEL_FONT_STROKE": f"{self.cell_size * .02:.2f}px",
-            "HOVER_RECT_STROKE_WIDTH": f"{self.cell_size / 20:.2f}px"
+            "HOVER_RECT_STROKE_WIDTH": f"{self.cell_size / 20:.2f}px",
+            "SIGNAL_STROKE_WIDTH": f"{self.cell_size * .06:.2f}px"
         }
         for key, value in style_replacements.items():
             self.style = self.style.replace(key, value)
@@ -329,20 +331,48 @@ class Animation:
         self.landscape.canvas.append(train_group)
         train_path_group = G(id="train_paths", class_name="train_paths")
         train_group.append(train_path_group)
-        train_paths = {}
+        signal_list = SignalList()
+        train_paths = []
         for train_id, train_info in self.train_data.items():
             train_path_builder = TrainPath(train_id, train_info, self.timeframe, self.landscape.cell_size, log_states=log_states)
+            
             path_element = Path(
                 d=train_path_builder.get_path_string(),
                 id=f"train_{train_id}_path",
                 class_name=f"train_{train_id}_path train_path",
             )
             train_path_group.append(path_element)
-            train_paths[train_id] = path_element
 
             self.display_states[train_id] = train_path_builder.get_display_states()
 
             train_group.append(make_train_group(train_id, self.landscape.cell_size, scale=SVG_SCALE))
+
+            train_signal_list = train_path_builder.get_signal_list()
+            signal_list.extend(train_signal_list)
+            train_paths.append(train_path_builder)
+        logger.info(f"Combined signal list: {signal_list}")
+        signal_list.update_states(train_paths)
+        self.signal_states = signal_list.get_display_states(timeframe=self.timeframe)
+        self.signal_list = signal_list
+        self.place_signals()
+
+    def place_signals(self, signal_list: SignalList = None):
+        """
+        Places the signals on the landscape based on the provided signal list.
+        """
+        if signal_list is None:
+            signal_list = self.signal_list
+        signal_group = G(id="signals", class_name="signals")
+        self.landscape.canvas.append(signal_group)
+        for i, signal in enumerate(signal_list):
+            logger.info(f"Placing signal {i}: {signal}")
+            signal_inst = get_signal_svg(i, signal.display_rotation)
+            # adjust the signal position to the center of the cell
+            x = self.landscape.get_abs_coord(signal.coords.x + .5 + signal.offset.x)
+            y = self.landscape.get_abs_coord(signal.coords.y + .5 + signal.offset.y)
+            signal_inst.set_attr("transform", f"translate({x},{y})")
+
+            signal_group.append(signal_inst)
 
     def get_style_string(self):
         return self.dynamic_style + "\n" + self.landscape.style
@@ -359,6 +389,7 @@ class Animation:
         and train animations.
         """
         html_output = get_html()
+        html_output = html_output.replace("TIMEFRAME", str(self.timeframe))
         html_output = html_output.replace("HEADING", f"Flaspland SVG Animation: {self.env_name}")
         html_output = html_output.replace("STANDARD_STYLE", self.get_style_string())
         html_output = html_output.replace("INLINE_SVG", self.get_canvas_string())
@@ -366,14 +397,17 @@ class Animation:
 
         html_output = html_output.replace("TRAIN_WIDGETS", get_train_widgets(self.train_data))
         html_output = html_output.replace("TRAIN_DATA", json.dumps(self.display_states, indent=4))
+        html_output = html_output.replace("SIGNAL_DATA", json.dumps(self.signal_states, indent=4))
             
         html_output = html_output.replace("TRAIN_DEFS", get_train_definitions(len(self.train_data)))
+        html_output = html_output.replace("SIGNAL_DEFS", get_signal_definitions(len(self.signal_list)))
     
         html_output = html_output.replace("MAX_STEP_PLACEHOLDER", str(self.timeframe))
     
         html_output = html_output.replace("MILLISECONDS_PER_STEP", str(milliseconds_per_step))
 
         path_step_code, stop_animation_code = get_train_animations(len(self.train_data))
+        path_step_code += get_signal_animations(len(self.signal_list))
         html_output = html_output.replace("PATH_STEP", path_step_code)
         html_output = html_output.replace("STOP_ANIMATION", stop_animation_code)
     

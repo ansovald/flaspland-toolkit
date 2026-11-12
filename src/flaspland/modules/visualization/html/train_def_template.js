@@ -4,4 +4,4 @@ const train_TRAIN_ID_animate = document.getElementById('train_TRAIN_ID_animate')
 const train_TRAIN_ID_status = document.getElementById('train_TRAIN_ID_status');
 const train_TRAIN_ID_action = document.getElementById('train_TRAIN_ID_action');
 const train_TRAIN_ID_pos = document.getElementById('train_TRAIN_ID_pos');
-const path_TRAIN_ID = data["TRAIN_ID"];
+const path_TRAIN_ID = train_data["TRAIN_ID"];

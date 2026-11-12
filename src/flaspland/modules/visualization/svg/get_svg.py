@@ -17,18 +17,49 @@ for file in track_dir.iterdir():
     if file.name.endswith(".svg") and file.name.split(".")[0].isdigit():
         TRACK_FILES.append(file)
 
-def make_signal_group(train_id):
+# def make_signal_group(signal_id, cell_size=25, scale=SVG_SCALE):
+#     """
+#     Create an SVG group representing a signal at a specific position.
+#     The signal consists of a background path and two lights (red and green).
+#     """
+#     signal_group = G(id=f"signal_{signal_id}_group", class_name="train_signal")
+#     primitives = G(id=f"signal_{signal_id}_primitives", class_name="signal_primitives")
+#     background = Path(d="m 228,76.8 c 0,9.941 -8.059,18 -18,18 -9.941,-0 -18,-8.059 -18,-18 V 30 c 0,-9.941 8.059,-18 18,-18 9.941,0 18,8.059 18,18z", style="stroke: #000000; stroke-width: 14.4;")
+#     primitives.append(background)
+#     red_light = Circle(cx=210, cy=30, r=18, style="fill: #cc3232;", id=f"signal_{signal_id}_red_light", class_name="red_light")
+#     primitives.append(red_light)
+#     green_light = Circle(cx=210, cy=76.8, r=18, style="fill: #2dc937;", id=f"signal_{signal_id}_green_light", class_name="green_light")
+#     primitives.append(green_light)
+#     primitives.scale = Vector(cell_size/scale, cell_size/scale)
+#     transform_group = G(id=f"signal_{signal_id}_transform_group", class_name="signal_transform")
+#     transform_group.set_attr("transform", f"translate({cell_size/2}, {-cell_size/2})")
+#     # transform_group.pos = Vector(-cell_size/2, -cell_size/2)
+#     transform_group.append(primitives)
+#     signal_group.append(transform_group)
+#     return signal_group
+
+def get_signal_svg(signal_id, rotation, cell_size=25, scale=SVG_SCALE):
     """
-    Create an SVG group representing the signal for a specific train.
-    The signal consists of a background path and two lights (red and green).
+    Signal SVG is stored as a generic template and customized for each signal using its ID
     """
-    signal_group = G(id=f"train_{train_id}_signal_group", class_name="train_signal")
-    background = Path(d="m 228,76.8 c 0,9.941 -8.059,18 -18,18 -9.941,-0 -18,-8.059 -18,-18 V 30 c 0,-9.941 8.059,-18 18,-18 9.941,0 18,8.059 18,18z", style="stroke: #000000; stroke-width: 14.4;")
-    signal_group.append(background)
-    red_light = Circle(cx=210, cy=30, r=18, style="fill: #cc3232;", id=f"train_{train_id}_red_light", class_name="red_light")
-    signal_group.append(red_light)
-    green_light = Circle(cx=210, cy=76.8, r=18, style="fill: #2dc937;", id=f"train_{train_id}_green_light", class_name="green_light")
-    signal_group.append(green_light)
+    svg_file = SVG_DIR / "generic_signal.xml"
+    svg_string = svg_file.read_text()
+    svg_string = svg_string.replace("{SIGNAL_ID}", str(signal_id))
+
+    # customize the generic xml, and scale it to cell size
+    scale_group = clean_svg_group(svg_string, f"signal_{signal_id}_scale", cell_size, scale)
+    # move the midpoint of the scaled signal to the origin for clean rotation
+    origin_group = G(id=f"signal_{signal_id}_origin")
+    origin_group.set_attr("transform", f"translate({-cell_size/2}, {-cell_size/2})")
+    origin_group.append(scale_group)
+    # rotate the signal to the correct angle
+    rotation_group = G(id=f"signal_{signal_id}_rotation")
+    rotation_group.set_attr("transform", f"rotate({rotation})")
+    rotation_group.append(origin_group)
+
+    # wrap the rotated signal in a group for further positioning and handling
+    signal_group = G(id=f"signal_{signal_id}", class_name="signal")
+    signal_group.append(rotation_group)
     return signal_group
 
 def get_train_svg(train_id, cell_size=25, scale=SVG_SCALE):
@@ -41,7 +72,7 @@ def get_train_svg(train_id, cell_size=25, scale=SVG_SCALE):
     svg_string = svg_string.replace("{TRAIN_ID}", str(train_id))
     train_group = clean_svg_group(svg_string, f"train_{train_id}_group", cell_size, scale, class_name="train")
     train_group.id = f"train_{train_id}_group"
-    train_group.append(make_signal_group(train_id))
+    # train_group.append(make_signal_group(train_id))
     return train_group
 
 def make_train_group(train_id, cell_size=25, scale=SVG_SCALE):

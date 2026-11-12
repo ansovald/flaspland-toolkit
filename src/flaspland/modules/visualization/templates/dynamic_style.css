@@ -150,22 +150,18 @@ h2 {
 .train_rotation {
   transform-box: fill-box;
 }
-.train_signal {
-  opacity: 0;
-}
 .green_light, .red_light {
   opacity: 0.2;
 }
-.train_signal.red, .train_signal.green {
+.signal.off {
+  opacity: 0;
+}
+.signal.red .red_light {
   opacity: 1;
 }
-.train_signal.red .red_light {
+.signal.green .green_light {
   opacity: 1;
 }
-.train_signal.green .green_light {
-  opacity: 1;
-}
-
 .cell_label:hover text {
     opacity: 1.0;
     transition: 0.2s;
