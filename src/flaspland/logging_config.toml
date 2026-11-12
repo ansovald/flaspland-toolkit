@@ -3,3 +3,5 @@ log_level = "INFO"
 log_directory = "logs"
 log_file = "flaspland.log"
 handlers = ["console", "file"]
+filemode = "w"
+format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"

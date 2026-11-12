@@ -6,7 +6,6 @@ Run as `flaspland solve ENV ENCODING [ENCODING ...]`; see `flaspland solve -h`.
 
 # standard packages
 import sys
-import warnings
 import time
 import pickle
 import logging
@@ -307,7 +306,7 @@ def main(argv=None) -> int:
 
         # end if simulation is finished
         if done['__all__'] and timestep < len(actions)-1:
-            warnings.warn('Simulation has reached its end before actions list has been exhausted.')
+            logger.warning('Simulation has reached its end before actions list has been exhausted.')
             break
 
         # check for new malfunctions

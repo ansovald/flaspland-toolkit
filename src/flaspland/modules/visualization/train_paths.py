@@ -545,7 +545,7 @@ class SignalList:
                         timestep = train_state.timestep
                         if train_path.action_at(timestep) != 'wait':
                             signal.states[timestep] = "green"
-                            logger.info(f"Signal at {signal.coords} turned green at timestep {timestep}")
+                            logger.debug(f"Signal at {signal.coords} turned green at timestep {timestep}")
 
     def get_signals(self):
         return self.signals

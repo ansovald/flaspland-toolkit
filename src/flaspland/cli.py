@@ -12,37 +12,42 @@ from . import __version__
 import logging
 
 LOGGING_CONFIG_FN = "logging_config.toml"
-LOGGING_CONFIG = Path(__file__).resolve().parent / LOGGING_CONFIG_FN
+LOGGING_CONFIG = Path(LOGGING_CONFIG_FN)
 # Load logging configuration from the TOML file if it exists
-if LOGGING_CONFIG.is_file():
-    import tomllib
-    try:
-        with LOGGING_CONFIG.open("rb") as f:
-            config = tomllib.load(f)
-            LOG_LEVEL = getattr(logging, config.get("log_level", "INFO").upper(), logging.INFO)
-            LOG_DIR = Path(config.get("log_directory", "logs"))
-            LOG_DIR.mkdir(exist_ok=True)
-            LOG_FILE = LOG_DIR / config.get("log_file", "flaspland.log")
-    except Exception as e:
-        print(f"Failed to load logging configuration from {LOGGING_CONFIG}, using default valus:\n{e}")
-else:
+if not LOGGING_CONFIG.is_file():
+    # copy the default logging configuration from the template
+    shutil.copyfile(Path(__file__).resolve().parent / LOGGING_CONFIG_FN, LOGGING_CONFIG)
+import tomllib
+try:
+    with LOGGING_CONFIG.open("rb") as f:
+        config = tomllib.load(f)
+        LOG_LEVEL = getattr(logging, config.get("log_level", "INFO").upper(), logging.INFO)
+        LOG_DIR = Path(config.get("log_directory", "logs"))
+        LOG_DIR.mkdir(exist_ok=True)
+        LOG_FILE = LOG_DIR / config.get("log_file", "flaspland.log")
+        HANDLERS = config.get("handlers", ["console", "file"])
+        FILEMODE = config.get("filemode", "w")
+        FORMAT = config.get("format", "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+except Exception as e:
+    print(f"Failed to load logging configuration from {LOGGING_CONFIG}, using default valus:\n{e}")
     LOG_LEVEL = logging.INFO
     LOG_DIR = Path("logs")
     LOG_DIR.mkdir(exist_ok=True)
     LOG_FILE = LOG_DIR / "flaspland.log"
+    FILEMODE = "w"
+    HANDLERS = ["console", "file"]
+    FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
-LOG_LEVEL = logging.INFO
-LOG_DIR = Path("logs")
-LOG_DIR.mkdir(exist_ok=True)
-LOG_FILE = LOG_DIR / "flaspland.log"
+handlers = []
+if "console" in HANDLERS:
+    handlers.append(logging.StreamHandler())
+if "file" in HANDLERS:
+    handlers.append(logging.FileHandler(LOG_FILE, encoding="utf-8", mode=FILEMODE))
 
 logging.basicConfig(
     level=LOG_LEVEL,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler(LOG_FILE, encoding="utf-8", mode='a'),
-    ],
+    format=FORMAT,
+    handlers=handlers
 )
 logger = logging.getLogger(__name__)
 

@@ -350,7 +350,6 @@ class Animation:
             train_signal_list = train_path_builder.get_signal_list()
             signal_list.extend(train_signal_list)
             train_paths.append(train_path_builder)
-        logger.info(f"Combined signal list: {signal_list}")
         signal_list.update_states(train_paths)
         self.signal_states = signal_list.get_display_states(timeframe=self.timeframe)
         self.signal_list = signal_list
@@ -365,7 +364,6 @@ class Animation:
         signal_group = G(id="signals", class_name="signals")
         self.landscape.canvas.append(signal_group)
         for i, signal in enumerate(signal_list):
-            logger.info(f"Placing signal {i}: {signal}")
             signal_inst = get_signal_svg(i, signal.display_rotation)
             # adjust the signal position to the center of the cell
             x = self.landscape.get_abs_coord(signal.coords.x + .5 + signal.offset.x)

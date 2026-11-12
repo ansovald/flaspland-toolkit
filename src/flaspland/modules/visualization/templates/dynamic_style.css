@@ -41,6 +41,10 @@ h2 {
   margin-block: 8px 10px;
 }
 
+.train_widgets {
+  overflow-y: scroll;
+}
+
 .footer {
   position: fixed;
   bottom: 0;
